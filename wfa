@@ -4,7 +4,8 @@ set -eu
 
 msgdebug=false
 nocolor=false
-debug=true
+debug=false
+pacman_args=""
 operation="none"
 
 msg() {
@@ -346,12 +347,18 @@ set_operation() {
     fi
 }
 
+add_pacman_args() {
+    local _pacman_args_array=(${pacman_args})
+    _pacman_args_array+=(${@})
+    pacman_args=${_pacman_args_array[@]}
+    msg_debug "PACMAN ARGS: ${pacman_args}"
+}
+
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShV"
-#          Q     R      S    h    v
-_opt_long="query,remove,sync,help,version"
+_opt_short="QRShVd"
+_opt_long="query,remove,sync,help,version,debug"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -376,6 +383,11 @@ while :; do
             ;;
         -V | --version)
             set_operation "version"
+            shift 1
+            ;;
+        -d | --debug)
+            debug=true
+            add_pacman_args "--debug"
             shift 1
             ;;
         -h | --help)
