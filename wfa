@@ -382,15 +382,6 @@ add_pacman_args() {
     msg_debug "PACMAN ARGS: ${pacman_args}"
 }
 
-# バージョンを表示して終了
-operation_version() {
-    # Pyalpmからlibalpmの値を取得
-    # 参考: https://pyalpm.readthedocs.io/en/latest/pyalpm/pyalpm.html
-    local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
-    local _pacman_version="$(pacman -Q pacman | cut -d ' ' -f 2)"
-    echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
-}
-
 # 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
 check_aur_package() {
     local _package="${1}"
@@ -401,6 +392,19 @@ check_aur_package() {
     else
         return 1
     fi
+}
+
+# バージョンを表示して終了
+operation_version() {
+    # Pyalpmからlibalpmの値を取得
+    # 参考: https://pyalpm.readthedocs.io/en/latest/pyalpm/pyalpm.html
+    local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
+    local _pacman_version="$(pacman -Q pacman | cut -d ' ' -f 2)"
+    echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
+}
+
+operation_remove() {
+    run_pacman "${specified_packages[@]}"
 }
 
 operation_sync() {
@@ -477,7 +481,10 @@ case "${operation}" in
     "sync")
         operation_sync
         ;;
-    none)
+    "remove")
+        operation_remove
+        ;;
+    "none")
         exit 0
         ;;
     *)
