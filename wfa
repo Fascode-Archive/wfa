@@ -477,15 +477,15 @@ operation_sync() {
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:"
+_opt_short="QRShVdb:s"
 _opt_long="query,remove,sync,help,version,debug,dbpath:,aururl"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
+unset _opt_short _opt_long
 
 eval set -- "${OPT}"
 msg_debug "Argument: ${OPT}"
-unset OPT _opt_short _opt_long
 
 while :; do
     case ${1} in
@@ -505,6 +505,20 @@ while :; do
             set_operation "version"
             shift 1
             ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            shift 1
+            ;;
+    esac
+done
+
+eval set -- "${OPT}"
+
+while :; do
+    case ${1} in
         -d | --debug)
             debug=true
             add_pacman_args "--debug"
@@ -528,8 +542,7 @@ while :; do
             break
             ;;
         *)
-            msg_error "Invalid argument '${1}'"
-            _usage 1
+            shift 1
             ;;
     esac
 done
