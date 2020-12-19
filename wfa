@@ -8,6 +8,7 @@ debug=false
 pacman_args=""
 operation="none"
 force_aur=false
+noconfirm=true
 
 wfa_version="0.1"
 aururl="https://aur.archlinux.org/"
