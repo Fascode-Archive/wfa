@@ -468,17 +468,22 @@ install_aur_package() {
     msg_debug "Get PKGBUILD from ${_aur_snapshot_url}"
 
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
-    local _do_not_download_pkgbuild=false
+    local _download_pkgbuild=false
     if [[ -f "${_pkgbuild_archive_path}" ]]; then
         msg_warn "PKGBUILD has already been downloaded."
-        msg_warn -n "Do you want to overwrite and download? [y]"
-        local yes_or_no
-        read yes_or_no
-        case "${yes_or_no}" in
-            "n" | "N" | "no" | "No" | "NO" ) _do_not_download_pkgbuild=true ;;
+        msg_warn -n "Do you want to overwrite and download? [n] :"
+        local _yes_or_no
+        if [[ "${noconfirm}" = true ]]; then
+            _yes_or_no="No"
+        else
+            read _yes_or_no
+        fi
+        case "${_yes_or_no}" in
+            "y" | "Y" | "yes" | "Yes" | "YES" ) _download_pkgbuild=true  ;;
+            *                                 ) _download_pkgbuild=false ;;
         esac
     fi
-    if [[ "${_do_not_download_pkgbuild}" = false ]]; then
+    if [[ "${_download_pkgbuild}" = true ]]; then
         curl -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
     fi
 
@@ -517,7 +522,7 @@ operation_sync() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:a"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -575,6 +580,11 @@ while :; do
         --aururl)
             aururl="${2}"
             shift 2
+            ;;
+        --noconfirm)
+            add_pacman_args "--noconfirm"
+
+            shift 1
             ;;
         -h | --help)
             usage
