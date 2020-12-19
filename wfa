@@ -5,6 +5,7 @@ set -eu
 msgdebug=false
 nocolor=false
 debug=true
+operation="none"
 
 msg() {
     local OPTIND OPTARG arg
@@ -320,7 +321,7 @@ msg_error() {
     fi
 }
 
-help (){
+usage (){
     echo "Usage:"
     echo "wfa"
     echo "wfa <operation> [...]"
@@ -336,4 +337,60 @@ help (){
     #echo "yay {-T --deptest}     [options] [package(s)]"
     #echo "yay {-U --upgrade}     [options] <file(s)>"
 }
+
+set_operation() {
+    if [[ "${operation}" = "none" ]]; then
+        operation="${1}"
+    else
+        msg_error "only one operation may be used at a time" 1
+    fi
+}
+
+
+# Parse options
+ARGUMENT="${@}"
+_opt_short="QRShV"
+#          Q     R      S    h    v
+_opt_long="query,remove,sync,help,version"
+
+OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
+[[ ${?} != 0 ]] && exit 1
+
+eval set -- "${OPT}"
+msg_debug "Argument: ${OPT}"
+unset OPT _opt_short _opt_long
+
+while :; do
+    case ${1} in
+        -Q | --query)
+            set_operation "query"
+            shift 1
+            ;;
+        -R | --remove)
+            set_operation "remove"
+            shift 1
+            ;;
+        -S | --sync)
+            set_operation "sync"
+            shift 1
+            ;;
+        -V | --version)
+            set_operation "version"
+            shift 1
+            ;;
+        -h | --help)
+            usage
+            shift 1
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            msg_error "Invalid argument '${1}'"
+            _usage 1
+            ;;
+    esac
+done
+
 
