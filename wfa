@@ -522,7 +522,8 @@ install_aur_package() {
     fi
 
     # PKGBUILDを展開
-    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/"
+    msg_info "Unpacking the tarball of PKGBUILD ..."
+    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/" 2>/dev/null 1>&2
 
     # .SRCINFOを解析
     local _build_dir="${wfa_cache_dir}/build/${_package}"
