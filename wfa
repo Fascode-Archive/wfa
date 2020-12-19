@@ -7,6 +7,7 @@ nocolor=false
 debug=false
 pacman_args=""
 operation="none"
+force_aur=false
 
 wfa_version="0.1"
 aururl="https://aur.archlinux.org/"
@@ -501,7 +502,7 @@ operation_remove() {
 operation_sync() {
     local _package
     for _package in ${specified_packages[@]}; do
-        if ! check_aur_package "${_package}"; then
+        if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
             # 公式パッケージなのでpacmanでそのままインストール
             run_pacman "${_package}"
         else
@@ -515,8 +516,8 @@ operation_sync() {
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl"
+_opt_short="QRShVdb:a"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -557,6 +558,11 @@ eval set -- "${OPT}"
 
 while :; do
     case ${1} in
+        -a | --aur)
+            force_aur=true
+            msg_debug "Assume targets are from the AUR"
+            shift 1
+            ;;
         -d | --debug)
             debug=true
             add_pacman_args "--debug"
