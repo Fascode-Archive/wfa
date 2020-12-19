@@ -500,7 +500,7 @@ install_aur_package() {
     msg_debug "Get PKGBUILD from ${_aur_snapshot_url}"
 
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
-    local _download_pkgbuild=false
+    local _download_pkgbuild=true
     if [[ -f "${_pkgbuild_archive_path}" ]]; then
         msg_warn "PKGBUILD has already been downloaded."
         msg_warn -n "Do you want to overwrite and download? [n] :"
