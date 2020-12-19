@@ -477,7 +477,7 @@ operation_sync() {
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:s"
+_opt_short="QRShVdb:"
 _opt_long="query,remove,sync,help,version,debug,dbpath:,aururl"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
