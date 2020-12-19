@@ -434,6 +434,37 @@ get_cache_dir() {
     fi
 }
 
+# Usage: get_srcinfo_data <path> <var>
+: << "DISABLED"
+get_srcinfo_data() {
+    local _srcinfo="${1}" _ver="${2}"
+    local _srcinfo_json=$(python << EOF
+from srcinfo.parse import parse_srcinfo; import json
+text = """
+$(cat ${1})
+"""
+parsed, errors = parse_srcinfo(text)
+print(json.dumps(parsed))
+EOF
+    )
+    echo "${_srcinfo_json}" | jq -r .${2}
+}
+DISABLED
+
+get_srcinfo_data() {
+    local _srcinfo="${1}"
+    local _var="${2}"
+    local _pkg _output
+    if [[ ! -f "${_srcinfo}" ]]; then
+        msg_error ".SRCINFO does not exist."
+    fi
+    for _pkg in $(cat "${_srcinfo}" | grep "${_var} = " | cut -d ' ' -f "3"); do
+        _output+=(${_pkg})
+    done
+    echo -n "${_output[@]}"
+}
+
+
 # AURからパッケージをビルドしてインストールします
 # 現在1つのパッケージしか指定できません
 install_aur_package() {
@@ -485,11 +516,25 @@ install_aur_package() {
         esac
     fi
     if [[ "${_download_pkgbuild}" = true ]]; then
+        remove "${_pkgbuild_archive_path}"
         curl -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
     fi
 
     # PKGBUILDを展開
-    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/${_package}"
+    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/"
+
+    # .SRCINFOを解析
+    local _build_dir="${wfa_cache_dir}/build/${_package}"
+    if [[ ! -f "${_build_dir}/.SRCINFO" ]]; then
+        msg_warn ".SRCINFO was not found.\nGenerate it using makepkg."
+        makepkg -p "${_build_dir}/PKGBUILD" --printsrcinfo > "${_build_dir}/.SRCINFO"
+    fi
+
+    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "makedepends")"
+    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "depends")"
+    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts")"
+
+
 }
 
 # バージョンを表示して終了
