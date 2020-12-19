@@ -542,7 +542,7 @@ install_aur_package() {
     # 衝突を確認
     local _pkg _conflicts_found=false
     for _pkg in ${_conflicts[@]}; do
-        if pacman -Qq "${_pkg}" 1>&2 2> /dev/null; then
+        if pacman -Qq "${_pkg}" 2>/dev/null 1>&2 ; then
             _conflicts_found=true
             msg_error "${_package} is colliding with ${_pkg}"
         fi
