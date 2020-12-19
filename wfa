@@ -484,7 +484,7 @@ install_aur_package() {
     fi
 
     local _found_packages="$(echo "${_aur_json}" | jq -r --tab '.results[].Name')"
-    msg_debug "Found package: $(echo ${_found_packages} | tr '\n' ' ')"
+    #msg_debug "Found package: $(echo ${_found_packages} | tr '\n' ' ')"
 
     if [[ -n "$(echo "${_found_packages}" | grep -x "${_package}" )" ]]; then
         msg_debug "Select a package ${_package} with an exact name match"
@@ -534,6 +534,9 @@ install_aur_package() {
     local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "makedepends")"
     local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "depends")"
     local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts")"
+    msg_debug "makedepends: ${_makedepends}"
+    msg_debug "depends: ${_depends}"
+    msg_debug "conflicts: ${_conflicts}"
 
 
     # 衝突を確認
