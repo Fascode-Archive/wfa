@@ -8,7 +8,7 @@ debug=false
 pacman_args=""
 operation="none"
 force_aur=false
-noconfirm=true
+noconfirm=false
 
 wfa_version="0.1"
 aururl="https://aur.archlinux.org/"
@@ -506,6 +506,7 @@ install_aur_package() {
         msg_warn -n "Do you want to overwrite and download? [n] :"
         local _yes_or_no
         if [[ "${noconfirm}" = true ]]; then
+            echo
             _yes_or_no="No"
         else
             read _yes_or_no
@@ -653,7 +654,7 @@ while :; do
             ;;
         --noconfirm)
             add_pacman_args "--noconfirm"
-
+            noconfirm=true
             shift 1
             ;;
         -h | --help)
