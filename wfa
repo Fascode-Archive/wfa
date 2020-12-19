@@ -334,15 +334,15 @@ usage (){
         echo "wfa <operation> [...]"
         echo
         echo "operations:"
-        echo "yay {-h --help}"
-        echo "yay {-V --version}"
-        #echo "yay {-D --database}    <options> <package(s)>"
-        #echo "yay {-F --files}       [options] [package(s)]"
-        echo "yay {-Q --query}       [options] [package(s)]"
-        echo "yay {-R --remove}      [options] <package(s)>"
-        echo "yay {-S --sync}        [options] [package(s)]"
-        #echo "yay {-T --deptest}     [options] [package(s)]"
-        #echo "yay {-U --upgrade}     [options] <file(s)>"
+        echo "wfa {-h --help}"
+        echo "wfa {-V --version}"
+        #echo "wfa {-D --database}    <options> <package(s)>"
+        #echo "wfa {-F --files}       [options] [package(s)]"
+        echo "wfa {-Q --query}       [options] [package(s)]"
+        echo "wfa {-R --remove}      [options] <package(s)>"
+        echo "wfa {-S --sync}        [options] [package(s)]"
+        #echo "wfa {-T --deptest}     [options] [package(s)]"
+        #echo "wfa {-U --upgrade}     [options] <file(s)>"
     }
 
     if [[ "${operation}" = "none" ]]; then
