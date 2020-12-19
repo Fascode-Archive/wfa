@@ -8,6 +8,8 @@ debug=false
 pacman_args=""
 operation="none"
 
+wfa_version="0.1"
+
 msg() {
     local OPTIND OPTARG arg
 
@@ -364,6 +366,12 @@ add_pacman_args() {
     msg_debug "PACMAN ARGS: ${pacman_args}"
 }
 
+operation_version() {
+    local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
+    local _pacman_version="$(pacman -Q pacman | cut -d ' ' -f 2)"
+    echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
+}
+
 
 # Parse options
 ARGUMENT="${@}"
@@ -415,4 +423,11 @@ while :; do
     esac
 done
 
-
+case "${operation}" in
+    version)
+        operation_version
+        ;;
+    *)
+        msg_error "Undefined operation." 1
+        ;;
+esac
