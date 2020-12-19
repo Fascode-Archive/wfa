@@ -9,6 +9,7 @@ pacman_args=""
 operation="none"
 
 wfa_version="0.1"
+aururl="https://aur.archlinux.org/"
 
 # メッセージ出力の制御
 # https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
@@ -466,7 +467,7 @@ operation_sync() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:"
-_opt_long="query,remove,sync,help,version,debug,dbpath:"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -500,6 +501,10 @@ while :; do
             ;;
         -b | --dbpath)
             add_pacman_args "--dbpath '${2}'"
+            shift 2
+            ;;
+        --aururl)
+            aururl="${2}"
             shift 2
             ;;
         -h | --help)
