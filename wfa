@@ -10,6 +10,8 @@ operation="none"
 
 wfa_version="0.1"
 
+# メッセージ出力の制御
+# https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
 msg() {
     local OPTIND OPTARG arg
 
@@ -359,6 +361,20 @@ set_operation() {
     fi
 }
 
+run_sudo() {
+    if (( ${UID} == 0 )); then
+        ${@}
+    else
+        sudo ${@}
+    fi
+}
+
+run_pacman() {
+    run_sudo pacman ${pacman_args} ${@}
+}
+
+# pacmanの引数を追加する
+# https://github.com/FascodeNet/aptpac/blob/master/aptpac のADD_OPTION関数を参考
 add_pacman_args() {
     local _pacman_args_array=(${pacman_args})
     _pacman_args_array+=(${@})
@@ -366,10 +382,38 @@ add_pacman_args() {
     msg_debug "PACMAN ARGS: ${pacman_args}"
 }
 
+# バージョンを表示して終了
 operation_version() {
+    # Pyalpmからlibalpmの値を取得
+    # 参考: https://pyalpm.readthedocs.io/en/latest/pyalpm/pyalpm.html
     local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
     local _pacman_version="$(pacman -Q pacman | cut -d ' ' -f 2)"
     echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
+}
+
+# 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
+check_aur_package() {
+    local _package="${1}"
+    # 参考: https://qiita.com/Hayao0819/items/a8740a17301fafa2fdab
+    if [[ -z "$(pacman -Fq "${_package}" 2>/dev/null | grep -o ".*${_package}$")" ]]; then
+        #AUR以外のリポジトリに存在しない
+        return 0
+    else
+        return 1
+    fi
+}
+
+operation_sync() {
+    local _package
+    for _package in ${specified_packages[@]}; do
+        if ! check_aur_package "${_package}"; then
+            # 公式パッケージなのでpacmanでそのままインストール
+            run_pacman "${_package}"
+        else
+            # AUR上のパッケージの場合の処理
+            msg_error "Getting the AUR package has not been implemented yet." 1
+        fi
+    done
 }
 
 
@@ -424,9 +468,14 @@ while :; do
     esac
 done
 
+specified_packages=(${@})
+
 case "${operation}" in
-    version)
+    "version")
         operation_version
+        ;;
+    "sync")
+        operation_sync
         ;;
     none)
         exit 0
