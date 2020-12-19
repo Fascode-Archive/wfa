@@ -535,6 +535,13 @@ install_aur_package() {
     local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts")"
 
 
+
+    # 依存パッケージをインストール
+    msg_info "Install dependent packages..."
+    install_package "${_makedepends}" "${_depends}"
+
+
+
 }
 
 # バージョンを表示して終了
@@ -550,9 +557,10 @@ operation_remove() {
     run_pacman "${specified_packages[@]}"
 }
 
-operation_sync() {
+# Usage: install_package <package1> <package2>...
+install_package() {
     local _package
-    for _package in ${specified_packages[@]}; do
+    for _package in ${@}; do
         if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
             # 公式パッケージなのでpacmanでそのままインストール
             run_pacman "${_package}"
@@ -562,6 +570,10 @@ operation_sync() {
             #msg_error "Getting the AUR package has not been implemented yet." 1
         fi
     done
+}
+
+operation_sync(){
+    install_package "${specified_packages[@]}"
 }
 
 
