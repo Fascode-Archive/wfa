@@ -323,25 +323,35 @@ msg_error() {
 }
 
 usage (){
-    echo "Usage:"
-    echo "wfa"
-    echo "wfa <operation> [...]"
-    echo
-    echo "operations:"
-    echo "yay {-h --help}"
-    echo "yay {-V --version}"
-    #echo "yay {-D --database}    <options> <package(s)>"
-    #echo "yay {-F --files}       [options] [package(s)]"
-    echo "yay {-Q --query}       [options] [package(s)]"
-    echo "yay {-R --remove}      [options] <package(s)>"
-    echo "yay {-S --sync}        [options] [package(s)]"
-    #echo "yay {-T --deptest}     [options] [package(s)]"
-    #echo "yay {-U --upgrade}     [options] <file(s)>"
+    local _wfa_usage
+    _wfa_usage() {
+        echo "Usage:"
+        echo "wfa"
+        echo "wfa <operation> [...]"
+        echo
+        echo "operations:"
+        echo "yay {-h --help}"
+        echo "yay {-V --version}"
+        #echo "yay {-D --database}    <options> <package(s)>"
+        #echo "yay {-F --files}       [options] [package(s)]"
+        echo "yay {-Q --query}       [options] [package(s)]"
+        echo "yay {-R --remove}      [options] <package(s)>"
+        echo "yay {-S --sync}        [options] [package(s)]"
+        #echo "yay {-T --deptest}     [options] [package(s)]"
+        #echo "yay {-U --upgrade}     [options] <file(s)>"
+    }
+
+    if [[ "${operation}" = "none" ]]; then
+        _wfa_usage
+    else
+        pacman -h --${operation}
+    fi
 }
 
 set_operation() {
     if [[ "${operation}" = "none" ]]; then
         operation="${1}"
+        add_pacman_args "--${operation}"
     else
         msg_error "only one operation may be used at a time" 1
     fi
