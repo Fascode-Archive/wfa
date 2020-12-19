@@ -461,7 +461,7 @@ install_aur_package() {
 
     # PKGBUILDをダウンロード
     msg_info "Downloaded PKGBUILD of ${_package}"
-    _aur_json=$(echo "${_aur_json}" | jq -r '.results[] | select(.Name == "google-chrome")' )
+    _aur_json=$(echo "${_aur_json}" | jq -r ".results[] | select(.Name == \"${_package}\")" )
     local _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
     local _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
     msg_debug "Get PKGBUILD from ${_aur_snapshot_url}"
