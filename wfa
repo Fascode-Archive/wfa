@@ -547,6 +547,10 @@ install_aur_package() {
             msg_error "${_package} is colliding with ${_pkg}"
         fi
     done
+    if pacman -Qq "${_package}" 2>/dev/null 1>&2; then
+        msg_error "${_package} is colliding with $(pacman -Qq "${_package}")"
+        _conflicts_found=true
+    fi
     if [[ "${_conflicts_found}" = true ]]; then
         msg_error "A conflict was found." 1
     fi
