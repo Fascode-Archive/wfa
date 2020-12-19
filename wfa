@@ -12,6 +12,7 @@ noconfirm=false
 
 wfa_version="0.1"
 aururl="https://aur.archlinux.org/"
+pacman_config="/etc/pacman.conf"
 
 # メッセージ出力の制御
 # https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
@@ -601,7 +602,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:a"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -664,6 +665,11 @@ while :; do
             add_pacman_args "--noconfirm"
             noconfirm=true
             shift 1
+            ;;
+        --config)
+            pacman_config="${2}"
+            add_pacman_args "--config \"${2}\""
+            shift 2
             ;;
         -h | --help)
             usage
