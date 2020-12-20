@@ -576,8 +576,11 @@ install_aur_package() {
 
     # 依存パッケージをインストール
     msg_info "Install dependent packages..."
+    local _force_aur="${force_aur}"
+    force_aur=false
     install_package "${_makedepends}" "${_depends}"
-
+    force_aur="${_force_aur}"
+    unset _force_aur
 
 
 }
