@@ -691,7 +691,7 @@ install_aur_package() {
     # ビルド後のパッケージ一覧を生成
     (
         cd "${_build_dir}"
-        makepkg --printsrcinfo > "${_build_dir}/.SRCINFO"
+        "${makepkg_command}" --printsrcinfo > "${_build_dir}/.SRCINFO"
     )
     local _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]" | sed 's/ //g'))
     local _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
