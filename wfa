@@ -711,7 +711,7 @@ install_aur_package() {
 
 
     # ビルド
-    add_args "${makepkg_command}" "-sf"
+    add_args "makepkg" "-sf"
     (
         cd "${_build_dir}"
         "${makepkg_command}" "${makepkg_args}"
