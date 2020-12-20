@@ -6,6 +6,7 @@ msgdebug=false
 nocolor=false
 debug=false
 pacman_args=""
+makepkg_args=""
 operation="none"
 force_aur=false
 noconfirm=false
@@ -392,7 +393,7 @@ usage (){
 set_operation() {
     if [[ "${operation}" = "none" ]]; then
         operation="${1}"
-        add_pacman_args "--${operation}"
+        add_args pacman "--${operation}"
     else
         msg_error "only one operation may be used at a time" 1
     fi
@@ -412,18 +413,34 @@ run_pacman() {
 
 # pacmanの引数を追加する
 # https://github.com/FascodeNet/aptpac/blob/master/aptpac のADD_OPTION関数を参考
-add_pacman_args() {
-    local _pacman_args_array=(${pacman_args})
-    _pacman_args_array+=(${@})
-    pacman_args=${_pacman_args_array[@]}
-    msg_debug "PACMAN ARGS: ${pacman_args}"
+# Usage: add_args [pacman/makepkg] <args1> <args2>...
+add_args() {
+    local _target="${1}"
+    local _args_array
+    shift 1
+
+    case "${_target}" in
+        "makepkg")
+            _args_array=(${makepkg_args})
+            _args_array+=(${@})
+            makepkg_args=${_args_array[@]}
+            msg_debug "MAKEPKG ARGS: ${makepkg_args}"
+            ;;
+
+        "pacman")
+            _args_array=(${pacman_args})
+            _args_array+=(${@})
+            pacman_args=${_args_array[@]}
+            msg_debug "PACMAN ARGS: ${pacman_args}"
+            ;;
+    esac
 }
 
 # 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
 check_aur_package() {
     local _package="${1}"
     # 参考: https://qiita.com/Hayao0819/items/a8740a17301fafa2fdab
-    if [[ -z "$(pacman -Fq "${_package}" 2>/dev/null | grep -o ".*${_package}$")" ]]; then
+    if [[ -z "$(pacman -Ssq "${_package}" 2>/dev/null | grep -o ".*${_package}$")" ]]; then
         #AUR以外のリポジトリに存在しない
         return 0
     else
@@ -592,7 +609,27 @@ install_aur_package() {
     force_aur="${_force_aur}"
     unset _force_aur
 
+    # ビルド準備
+    # srcdirの確認
+    if [[ -d "${_build_dir}/src" ]]; then
+        msg_info "Found ${_build_dir}/src"
+        msg_info "Packages to cleanBuild? [n] :"
+        local _yes_or_no
+        unset _yes_or_no
+        if [[ "${noconfirm}" = true ]]; then
+            echo
+            _yes_or_no="No"
+        else
+            read _yes_or_no
+        fi
+        case "${_yes_or_no}" in
+            "y" | "Y" | "yes" | "Yes" | "YES" ) add_args makepkg "--clean" ;;
+        esac
+    fi
 
+    # ビルド
+    add_args makepkg "-p '${_build_dir}/PKGBUILD'"
+    makepkg ${makepkg_args}
 }
 
 # バージョンを表示して終了
@@ -691,11 +728,11 @@ while :; do
             ;;
         -d | --debug)
             debug=true
-            add_pacman_args "--debug"
+            add_args pacman "--debug"
             shift 1
             ;;
         -b | --dbpath)
-            add_pacman_args "--dbpath '${2}'"
+            add_args pacman "--dbpath '${2}'"
             shift 2
             ;;
         --aururl)
@@ -703,13 +740,13 @@ while :; do
             shift 2
             ;;
         --noconfirm)
-            add_pacman_args "--noconfirm"
+            add_args pacman "--noconfirm"
             noconfirm=true
             shift 1
             ;;
         --config)
             pacman_config="${2}"
-            add_pacman_args "--config \"${2}\""
+            add_args pacman "--config \"${2}\""
             shift 2
             ;;
         -h | --help)
