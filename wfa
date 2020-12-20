@@ -348,6 +348,8 @@ remove() {
 }
 
 usage (){
+    local _pacman_help=false
+
     local _wfa_usage
     _wfa_usage() {
         echo "Usage:"
@@ -366,10 +368,24 @@ usage (){
         #echo "wfa {-U --upgrade}     [options] <file(s)>"
     }
 
+    local _wfa_usage_sync
+    _wfa_usage_sync() {
+        echo "usage:  wfa {-S --sync} [options] [package(s)]"
+        echo "options:"
+        echo "  -b, --dbpath <path>  set an alternate database location"
+        echo "      --config <path>  set an alternate configuration file"
+        echo "      --noconfirm      do not ask for any confirmation"
+
+    }
+
     if [[ "${operation}" = "none" ]]; then
         _wfa_usage
-    else
+    elif [[ "${_pacman_help}" = true ]]; then
         pacman -h --${operation}
+    elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
+        _wfa_usage_${operation}
+    else
+        msg_error "Undefined operation." 1
     fi
 }
 
