@@ -32,3 +32,11 @@ Install <code>wfa-git</code> from AUR
     <li>pyalpm</li>
     <li>python-srcinfo</li>
 </ul>
+
+<h3> Todo </h3>
+- `--search`の色付き出力
+- `pacman`の全オペレーションの実装
+- `pacman`の全オプションの実装
+- `yay`の全オプションの実装
+- `pacstrap`のサポート
+- パッケージのビルドとインストールの順番を変更
