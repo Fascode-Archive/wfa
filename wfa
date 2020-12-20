@@ -5,15 +5,28 @@ set -eu
 msgdebug=false
 nocolor=false
 debug=false
-pacman_args=""
-makepkg_args=""
 operation="none"
 force_aur=false
 noconfirm=false
-
 wfa_version="0.1"
 aururl="https://aur.archlinux.org/"
+nomakepkgconf=false
+
+
+makepkg_command="/usr/bin/makepkg"
+makepkg_config="/etc/makepkg.conf"
+makepkg_args=""
+
+pacman_command="/usr/bin/pacman"
 pacman_config="/etc/pacman.conf"
+pacman_args=""
+
+git_command="/usr/bin/git"
+git_args=""
+
+gpg_command="/usr/bin/gpg"
+gpg_args=""
+
 
 # メッセージ出力の制御
 # https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
@@ -358,15 +371,37 @@ usage (){
         echo "wfa <operation> [...]"
         echo
         echo "operations:"
-        echo "wfa {-h --help}"
-        echo "wfa {-V --version}"
-        #echo "wfa {-D --database}    <options> <package(s)>"
-        #echo "wfa {-F --files}       [options] [package(s)]"
-        echo "wfa {-Q --query}       [options] [package(s)]"
-        echo "wfa {-R --remove}      [options] <package(s)>"
-        echo "wfa {-S --sync}        [options] [package(s)]"
-        #echo "wfa {-T --deptest}     [options] [package(s)]"
-        #echo "wfa {-U --upgrade}     [options] <file(s)>"
+        echo "    wfa {-h --help}"
+        echo "    wfa {-V --version}"
+       #echo "    wfa {-D --database}    <options> <package(s)>"
+       #echo "    wfa {-F --files}       [options] [package(s)]"
+        echo "    wfa {-Q --query}       [options] [package(s)]"
+        echo "    wfa {-R --remove}      [options] <package(s)>"
+        echo "    wfa {-S --sync}        [options] [package(s)]"
+       #echo "    wfa {-T --deptest}     [options] [package(s)]"
+       #echo "    wfa {-U --upgrade}     [options] <file(s)>"
+       #echo
+       #echo "New operations:"
+       #echo "    wfa {-P --show}        [options]"
+       #echo "    wfa {-G --getpkgbuild} [package(s)]"
+        echo
+        echo "New options:"
+        echo "       --repo             Assume targets are from the repositories"
+        echo "    -a --aur              Assume targets are from the AUR"
+        echo
+        echo "Permanent configuration options:"
+        echo "    --aururl      <url>   Set an alternative AUR URL"
+        echo "    --makepkg     <file>  makepkg command to use"
+        echo "    --mflags      <flags> Pass arguments to makepkg"
+        echo "    --pacman      <file>  pacman command to use"
+        echo "    --git         <file>  git command to use"
+        echo "    --gitflags    <flags> Pass arguments to git"
+        echo "    --gpg         <file>  gpg command to use"
+        echo "    --gpgflags    <flags> Pass arguments to gpg"
+        echo "    --config      <file>  pacman.conf file to use"
+        echo "    --makepkgconf <file>  makepkg.conf file to use"
+        echo "    --nomakepkgconf       Use the default makepkg.conf"
+        echo
     }
 
     local _wfa_usage_sync
@@ -382,7 +417,7 @@ usage (){
     if [[ "${operation}" = "none" ]]; then
         _wfa_usage
     elif [[ "${_pacman_help}" = true ]]; then
-        pacman -h --${operation}
+        "${pacman_command}" -h --${operation}
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         _wfa_usage_${operation}
     else
@@ -408,7 +443,7 @@ run_sudo() {
 }
 
 run_pacman() {
-    run_sudo pacman ${@}
+    run_sudo "${pacman_command}" ${@}
 }
 
 # pacmanの引数を追加する
@@ -452,7 +487,7 @@ check_aur_package() {
 # 引数で指定されたパッケージが既にインストールされている場合は正常終了します。
 check_installed_package() {
     local _package="${1}"
-    if pacman -Qq "${_package}" > /dev/null 2>&1; then
+    if "${pacman_command}" -Qq "${_package}" > /dev/null 2>&1; then
         return 0
     else
         return 1
@@ -561,7 +596,7 @@ install_aur_package() {
         msg_warn ".SRCINFO was not found.\nGenerate it using makepkg."
         (
             cd "${_build_dir}"
-            makepkg --printsrcinfo > "${_build_dir}/.SRCINFO"
+            "${makepkg_command}" --printsrcinfo > "${_build_dir}/.SRCINFO"
         )
     fi
 
@@ -576,13 +611,13 @@ install_aur_package() {
     # 衝突を確認
     local _pkg _conflicts_found=false
     for _pkg in ${_conflicts[@]}; do
-        if pacman -Qq "${_pkg}" > /dev/null 2>&1 ; then
+        if "${pacman_command}" -Qq "${_pkg}" > /dev/null 2>&1 ; then
             _conflicts_found=true
             msg_error "${_package} is colliding with ${_pkg}"
         fi
     done
-    if pacman -Qq "${_package}" > /dev/null 2>&1 &&  [[ ! "$(pacman -Qq "${_package}" 2> /dev/null)" = "${_package}" ]]; then
-        msg_error "${_package} is colliding with $(pacman -Qq "${_package}")"
+    if "${pacman_command}" -Qq "${_package}" > /dev/null 2>&1 &&  [[ ! "$("${pacman_command}" -Qq "${_package}" 2> /dev/null)" = "${_package}" ]]; then
+        msg_error "${_package} is colliding with $("${pacman_command}" -Qq "${_package}")"
         _conflicts_found=true
     fi
     if [[ "${_conflicts_found}" = true ]]; then
@@ -618,10 +653,10 @@ install_aur_package() {
 
 
     # ビルド
-    add_args makepkg "-sf"
+    add_args "${makepkg_command}" "-sf"
     (
         cd "${_build_dir}"
-        makepkg "${makepkg_args}"
+        "${makepkg_command}" "${makepkg_args}"
     )
 
 
@@ -641,7 +676,7 @@ install_aur_package() {
         _arch="$(uname -m)"
     fi
     local _PKGEXT=$(
-        source "/etc/makepkg.conf"
+        source "${makepkg_config}"
         echo "${PKGEXT}"
     )
     local _pkgfilelist=()
@@ -658,7 +693,7 @@ operation_version() {
     # Pyalpmからlibalpmの値を取得
     # 参考: https://pyalpm.readthedocs.io/en/latest/pyalpm/pyalpm.html
     local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
-    local _pacman_version="$(pacman -Q pacman | cut -d ' ' -f 2)"
+    local _pacman_version="$("${pacman_command}" -Q pacman | cut -d ' ' -f 2)"
     echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
 }
 
@@ -701,7 +736,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:a"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -770,6 +805,38 @@ while :; do
             add_args pacman "--config \"${2}\""
             shift 2
             ;;
+        --makepkg)
+            makepkg_command="${2}"
+            shift 2
+            ;;
+        --mflags)
+            makepkg_args="${2}"
+            shift 2
+            ;;
+        --pacman)
+            pacman_command="${2}"
+            shift 2
+            ;;
+        --git)
+            git_command="${2}"
+            shift 2
+            ;;
+        --gitflags)
+            git_args="${2}"
+            shift 2
+            ;;
+        --makepkgconfig)
+            if [[ "${nomakepkgconf}" = false ]]; then
+                makepkg_config="${2}"
+            else
+                msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
+            shift 2
+            ;;
+        --nomakepkgconf)
+            makepkg_config="/etc/makepkg.conf"
+            nomakepkgconf=true
+            shift 1
+        ;;
         -h | --help)
             usage
             shift 1
