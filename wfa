@@ -408,7 +408,7 @@ run_sudo() {
 }
 
 run_pacman() {
-    run_sudo pacman ${pacman_args} ${@}
+    run_sudo pacman ${@}
 }
 
 # pacmanの引数を追加する
@@ -479,6 +479,7 @@ get_cache_dir() {
 }
 
 # Usage: get_srcinfo_data <path> <var>
+# 参考: https://qiita.com/withelmo/items/b0e1ffba639dd3ae18c0
 get_srcinfo_data() {
     local _srcinfo="${1}" _ver="${2}"
     local _srcinfo_json=$(python << EOF
@@ -490,7 +491,7 @@ parsed, errors = parse_srcinfo(text)
 print(json.dumps(parsed))
 EOF
 )
-    echo "${_srcinfo_json}" | jq -rc ".${2}?" | tr '\n' ' '
+    echo "${_srcinfo_json}" | jq -rc "${2}" | tr '\n' ' '
 }
 
 
@@ -561,9 +562,9 @@ install_aur_package() {
         makepkg -p "${_build_dir}/PKGBUILD" --printsrcinfo > "${_build_dir}/.SRCINFO"
     fi
 
-    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "makedepends[]")"
-    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "depends[]")"
-    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts[]")"
+    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".makedepends[]?")"
+    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".depends[]?")"
+    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".conflicts[]?")"
     msg_debug "makedepends: ${_makedepends}"
     msg_debug "depends: ${_depends}"
     msg_debug "conflicts: ${_conflicts}"
@@ -612,9 +613,35 @@ install_aur_package() {
         esac
     fi
 
+    # ビルド後のパッケージ一覧を生成
+    local _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]" | sed 's/ //g'))
+    local _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
+    local _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
+    local _arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
+    local _arch _pkgname
+    if [[ "${_arch_array[@]}" = "any" ]]; then
+        _arch="any"
+    else
+        _arch="$(uname -m)"
+    fi
+    local _PKGEXT=$(
+        source "/etc/makepkg.conf"
+        echo "${PKGEXT}"
+    )
+    local _pkgfilelist=()
+    for _pkgname in ${_pkgnames[@]}; do
+        _pkgfilelist+=("${_build_dir}/${_pkgname}-${_pkgver}-${_pkgrel}-${_arch}${_PKGEXT}")
+    done
+
     # ビルド
-    add_args makepkg "-p '${_build_dir}/PKGBUILD'"
-    makepkg ${makepkg_args}
+    add_args makepkg "-sf"
+    (
+        cd "${_build_dir}"
+        makepkg "${makepkg_args}"
+    )
+
+    # インストール
+    run_pacman -U --noconfirm ${_pkgfilelist[@]}
 }
 
 # バージョンを表示して終了
@@ -627,7 +654,7 @@ operation_version() {
 }
 
 operation_remove() {
-    run_pacman "${specified_packages[@]}"
+    run_pacman ${pacman_args} "${specified_packages[@]}"
 }
 
 # Usage: install_package <package1> <package2>...
@@ -637,7 +664,7 @@ install_package() {
         if ! check_installed_package "${_package}"; then
             if ! check_aur_package "${_package}"; then
                 # 公式パッケージなのでpacmanでそのままインストール
-                run_pacman "${_package}"
+                run_pacman ${pacman_args} "${_package}"
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
@@ -652,7 +679,7 @@ operation_sync(){
     for _package in ${specified_packages[@]}; do
         if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
             # 公式パッケージなのでpacmanでそのままインストール
-            run_pacman "${_package}"
+            run_pacman ${pacman_args} "${_package}"
         else
             # AUR上のパッケージの場合の処理
             install_aur_package "${_package}"
