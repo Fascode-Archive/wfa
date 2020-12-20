@@ -51,6 +51,13 @@ gpg_command="/usr/bin/gpg"
 # 引数
 gpg_args=""
 
+#-- sudo --#
+# 実行ファイル
+sudo_command="/usr/bin/sudo"
+# 引数
+sudo_args=""
+
+
 ######################################################################################
 
 
@@ -485,14 +492,32 @@ add_args() {
             _args_array=(${makepkg_args})
             _args_array+=(${@})
             makepkg_args=${_args_array[@]}
-            msg_debug "MAKEPKG ARGS: ${makepkg_args}"
+            msg_debug "makepkg ARGS: ${makepkg_args}"
             ;;
 
         "pacman")
             _args_array=(${pacman_args})
             _args_array+=(${@})
             pacman_args=${_args_array[@]}
-            msg_debug "PACMAN ARGS: ${pacman_args}"
+            msg_debug "pacman ARGS: ${pacman_args}"
+            ;;
+        "git")
+            _args_array=(${mpg_args})
+            _args_array+=(${@})
+            git_args=${_args_array[@]}
+            msg_debug "git ARGS: ${git_args}"
+            ;;
+        "gpg")
+            _args_array=(${gpg_args})
+            _args_array+=(${@})
+            gpg_args=${_args_array[@]}
+            msg_debug "gpg ARGS: ${gpg_args}"
+            ;;
+        "sudo")
+            _args_array=(${sudo_args})
+            _args_array+=(${@})
+            sudo_args=${_args_array[@]}
+            msg_debug "sudo ARGS: ${sudo_args}"
             ;;
     esac
 }
