@@ -16,7 +16,7 @@
 </p>
 
 <h3> Install </h3>
-Install `wfa-git` from AUR
+Install <code>wfa-git</code> from AUR
 
 
 <h3> Screen shot </h3>
