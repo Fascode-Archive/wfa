@@ -9,12 +9,14 @@ wfa_version="0.1"
 wfa_name="WFA"
 wfa_command="wfa"
 
+#-- options (int) --#
+option_y_count=0
+
 #-- options (str) --#
 aururl="https://aur.archlinux.org/"
 operation="none"
 
 #-- options (bool) --#
-
 debug=false
 force_aur=false
 msgdebug=false
@@ -788,8 +790,8 @@ operation_sync(){
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:a"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps"
+_opt_short="QRShVdb:ay"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -848,6 +850,10 @@ while :; do
         -b | --dbpath)
             add_args pacman "--dbpath '${2}'"
             shift 2
+            ;;
+        -y | --refresh)
+            option_y_count=$(( option_y_count + 1 ))
+            shift 1
             ;;
         --aururl)
             aururl="${2}"
@@ -912,6 +918,13 @@ while :; do
 done
 
 specified_packages=(${@})
+
+# Run database update
+if (( "${option_y_count}" == 1 )); then
+    run_pacman -Sy
+elif (( "${option_y_count}" >= 2 )); then
+    run_pacman -Syy
+fi
 
 case "${operation}" in
     "version")
