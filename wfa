@@ -863,6 +863,7 @@ while :; do
                 makepkg_config="${2}"
             else
                 msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
+            fi
             shift 2
             ;;
         --nomakepkgconf)
