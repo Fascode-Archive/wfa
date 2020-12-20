@@ -2,15 +2,17 @@
 
 set -eu
 
+wfa_version="0.1"
+aururl="https://aur.archlinux.org/"
+operation="none"
+
 msgdebug=false
 nocolor=false
 debug=false
-operation="none"
 force_aur=false
 noconfirm=false
-wfa_version="0.1"
-aururl="https://aur.archlinux.org/"
 nomakepkgconf=false
+nodeps=false
 
 
 makepkg_command="/usr/bin/makepkg"
@@ -626,12 +628,14 @@ install_aur_package() {
 
 
     # 依存パッケージをインストール
-    msg_info "Install dependent packages..."
-    local _force_aur="${force_aur}"
-    force_aur=false
-    install_package "${_depends}"
-    force_aur="${_force_aur}"
-    unset _force_aur
+    if [[ "${nodeps}" = false ]]; then
+        msg_info "Install dependent packages..."
+        local _force_aur="${force_aur}"
+        force_aur=false
+        install_package "${_depends}"
+        force_aur="${_force_aur}"
+        unset _force_aur
+    fi
 
     # ビルド準備
     # srcdirの確認
@@ -736,7 +740,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:a"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -782,9 +786,14 @@ while :; do
             msg_debug "Assume targets are from the AUR"
             shift 1
             ;;
-        -d | --debug)
+        --debug)
             debug=true
             add_args pacman "--debug"
+            shift 1
+            ;;
+        -d | --nodeps)
+            nodeps=true
+            add_args pacman "--nodeps"
             shift 1
             ;;
         -b | --dbpath)
