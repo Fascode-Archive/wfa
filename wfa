@@ -452,7 +452,7 @@ check_aur_package() {
 # 引数で指定されたパッケージが既にインストールされている場合は正常終了します。
 check_installed_package() {
     local _package="${1}"
-    if pacman -Qq "${_package}" 2> /dev/null 1>&2; then
+    if pacman -Qq "${_package}" > /dev/null 2>&1; then
         return 0
     else
         return 1
@@ -553,13 +553,16 @@ install_aur_package() {
 
     # PKGBUILDを展開
     msg_info "Unpacking the tarball of PKGBUILD ..."
-    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/" 2>/dev/null 1>&2
+    tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/" > /dev/null 2>&1
 
     # .SRCINFOを解析
     local _build_dir="${wfa_cache_dir}/build/${_package}"
     if [[ ! -f "${_build_dir}/.SRCINFO" ]]; then
         msg_warn ".SRCINFO was not found.\nGenerate it using makepkg."
-        makepkg -p "${_build_dir}/PKGBUILD" --printsrcinfo > "${_build_dir}/.SRCINFO"
+        (
+            cd "${_build_dir}"
+            makepkg --printsrcinfo > "${_build_dir}/.SRCINFO"
+        )
     fi
 
     local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".makedepends[]?")"
@@ -573,12 +576,12 @@ install_aur_package() {
     # 衝突を確認
     local _pkg _conflicts_found=false
     for _pkg in ${_conflicts[@]}; do
-        if pacman -Qq "${_pkg}" 2>/dev/null 1>&2 ; then
+        if pacman -Qq "${_pkg}" > /dev/null 2>&1 ; then
             _conflicts_found=true
             msg_error "${_package} is colliding with ${_pkg}"
         fi
     done
-    if [[ ! "$(pacman -Qq "${_package}")" = "${_package}" ]]; then
+    if pacman -Qq "${_package}" > /dev/null 2>&1 &&  [[ ! "$(pacman -Qq "${_package}" 2> /dev/null)" = "${_package}" ]]; then
         msg_error "${_package} is colliding with $(pacman -Qq "${_package}")"
         _conflicts_found=true
     fi
@@ -613,7 +616,20 @@ install_aur_package() {
         esac
     fi
 
+
+    # ビルド
+    add_args makepkg "-sf"
+    (
+        cd "${_build_dir}"
+        makepkg "${makepkg_args}"
+    )
+
+
     # ビルド後のパッケージ一覧を生成
+    (
+        cd "${_build_dir}"
+        makepkg --printsrcinfo > "${_build_dir}/.SRCINFO"
+    )
     local _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]" | sed 's/ //g'))
     local _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
     local _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
@@ -632,13 +648,6 @@ install_aur_package() {
     for _pkgname in ${_pkgnames[@]}; do
         _pkgfilelist+=("${_build_dir}/${_pkgname}-${_pkgver}-${_pkgrel}-${_arch}${_PKGEXT}")
     done
-
-    # ビルド
-    add_args makepkg "-sf"
-    (
-        cd "${_build_dir}"
-        makepkg "${makepkg_args}"
-    )
 
     # インストール
     run_pacman -U --noconfirm ${_pkgfilelist[@]}
