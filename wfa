@@ -479,7 +479,6 @@ get_cache_dir() {
 }
 
 # Usage: get_srcinfo_data <path> <var>
-: << "DISABLED"
 get_srcinfo_data() {
     local _srcinfo="${1}" _ver="${2}"
     local _srcinfo_json=$(python << EOF
@@ -490,22 +489,8 @@ $(cat ${1})
 parsed, errors = parse_srcinfo(text)
 print(json.dumps(parsed))
 EOF
-    )
-    echo "${_srcinfo_json}" | jq -r .${2}
-}
-DISABLED
-
-get_srcinfo_data() {
-    local _srcinfo="${1}"
-    local _var="${2}"
-    local _pkg _output
-    if [[ ! -f "${_srcinfo}" ]]; then
-        msg_error ".SRCINFO does not exist."
-    fi
-    for _pkg in $(cat "${_srcinfo}" | grep "${_var} = " | cut -d ' ' -f "3"); do
-        _output+=(${_pkg})
-    done
-    echo -n "${_output[@]}"
+)
+    echo "${_srcinfo_json}" | jq -rc ".${2}?" | tr '\n' ' '
 }
 
 
@@ -576,9 +561,9 @@ install_aur_package() {
         makepkg -p "${_build_dir}/PKGBUILD" --printsrcinfo > "${_build_dir}/.SRCINFO"
     fi
 
-    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "makedepends")"
-    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "depends")"
-    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts")"
+    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "makedepends[]")"
+    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "depends[]")"
+    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" "conflicts[]")"
     msg_debug "makedepends: ${_makedepends}"
     msg_debug "depends: ${_depends}"
     msg_debug "conflicts: ${_conflicts}"
