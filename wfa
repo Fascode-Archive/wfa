@@ -432,6 +432,16 @@ check_aur_package() {
 }
 
 
+# 引数で指定されたパッケージが既にインストールされている場合は正常終了します。
+check_installed_package() {
+    local _package="${1}"
+    if pacman -Qq "${_package}" 2> /dev/null 1>&2; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 get_cache_dir() {
     local _user_config_dir
     if [[ -v XDG_CONFIG_HOME ]]; then
@@ -602,6 +612,22 @@ operation_remove() {
 install_package() {
     local _package
     for _package in ${@}; do
+        if ! check_installed_package "${_package}"; then
+            if ! check_aur_package "${_package}"; then
+                # 公式パッケージなのでpacmanでそのままインストール
+                run_pacman "${_package}"
+            else
+                # AUR上のパッケージの場合の処理
+                install_aur_package "${_package}"
+                #msg_error "Getting the AUR package has not been implemented yet." 1
+            fi
+        fi
+    done
+}
+
+operation_sync(){
+    local _package
+    for _package in ${specified_packages[@]}; do
         if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
             # 公式パッケージなのでpacmanでそのままインストール
             run_pacman "${_package}"
@@ -611,10 +637,6 @@ install_package() {
             #msg_error "Getting the AUR package has not been implemented yet." 1
         fi
     done
-}
-
-operation_sync(){
-    install_package "${specified_packages[@]}"
 }
 
 
