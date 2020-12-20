@@ -72,7 +72,7 @@ declare -A ja_JP=(
     ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
     ["Install dependent packages..."]="依存パッケージをインストールします..."
     ["No package with an exact name match was found."]="完全に一致する名前のパッケージが見つかりませんでした。"
-    ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ ％ sを選択します"
+    ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ ％s を選択します"
     ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
 )
 
