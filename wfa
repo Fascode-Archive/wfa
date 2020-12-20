@@ -63,6 +63,17 @@ sudo_args=""
 
 
 ######################################################################################
+# ここから翻訳データ
+
+declare -A ja_JP=(
+    ["Undefined operation."]="未定義のオペレーションです。"
+    ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
+    ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
+    ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
+)
+
+######################################################################################
+# ここからいろいろシェルスクリプト
 
 
 # メッセージ出力の制御
@@ -281,7 +292,7 @@ msg() {
     _message="${@}"
 
     echo_type() {
-        __time
+        local __time
         if [[ "${_nolabel}" = false ]]; then
             if [[ "${_noadjust}" = false ]]; then
                 for __time in $( seq 1 $(( ${_label_space} - ${_word_count})) ); do
@@ -323,6 +334,40 @@ msg() {
     done
 }
 
+# テキストの翻訳
+#set -xv
+translate() {
+    local _msg_translate
+    _msg_translate() {
+        local _get_text
+        local _locale="$(echo "${LANG}" | cut -d "." -f 1)"
+
+        _get_text() {
+            set +eu
+            local _translated_text="$(eval echo '$'{${_locale}["${@}"]})"
+            set -eu
+            if [[ -z "${_translated_text}" ]]; then
+                echo "${*}"
+            else
+                echo "${_translated_text}"
+            fi
+        }
+
+        local _text _fulltext=() _main
+
+        if declare -p "${_locale}" 2> /dev/null 1>/dev/null; then
+            _main="$(_get_text ${1})"
+        else
+            _main="${1}"
+        fi
+        shift 1
+        echo "$(printf "${_main}" ${@})"
+    }
+    _msg_translate "${@}"
+}
+
+
+
 # Show an INFO message
 # $1: message string
 msg_info() {
@@ -336,7 +381,7 @@ msg_info() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} info "${1}"
+    msg ${_msg_opts} info "${@}"
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
@@ -355,7 +400,7 @@ msg_warn() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} warn "${1}"
+    msg ${_msg_opts} warn "${@}"
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
@@ -375,7 +420,7 @@ msg_debug() {
         fi
         [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
         [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-        msg ${_msg_opts} debug "${1}"
+        msg ${_msg_opts} debug "${@}"
     fi
     if [[ "${bash_debug}" = true ]]; then
         set -xv
@@ -396,14 +441,13 @@ msg_error() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} error "${1}"
-    if [[ -n "${2:-}" ]]; then
-        exit ${2}
-    fi
+    msg ${_msg_opts} error $(translate "${@}")
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
 }
+
+# ここから下のテキストは翻訳可能です
 
 # rm helper
 # Delete the file if it exists.
@@ -482,7 +526,8 @@ usage (){
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         _wfa_usage_${operation}
     else
-        msg_error "Undefined operation." 1
+        msg_error "Undefined operation."
+        exit 1
     fi
 }
 
@@ -491,7 +536,8 @@ set_operation() {
         operation="${1}"
         add_args pacman "--${operation}"
     else
-        msg_error "only one operation may be used at a time" 1
+        msg_error "only one operation may be used at a time"
+        exit 1
     fi
 }
 
@@ -548,7 +594,9 @@ add_args() {
             msg_debug "sudo ARGS: ${sudo_args}"
             ;;
         *)
-            msg_error "Failed to set the argument of ${_target}\nSetting that command is not currently supported." 1
+            msg_error "Failed to set the argument of %s" "${_target}"
+            msg_error "Setting that command is not currently supported."
+            exit 1
             ;;
     esac
 }
@@ -627,7 +675,8 @@ install_aur_package() {
     # AurJsonから値を取得
     local _aur_json=$(curl -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name&arg=${_package}" | jq -r)
     if (( "$(echo "${_aur_json}" | jq -r ".resultcount")" == 0 )); then
-        msg_error "Could not find all required packages:\n	${_package}" 1
+        msg_error "Could not find all required packages:\n	${_package}"
+        exit 1
     fi
 
     local _found_packages="$(echo "${_aur_json}" | jq -r --tab '.results[].Name')"
@@ -636,7 +685,8 @@ install_aur_package() {
     if [[ -n "$(echo "${_found_packages}" | grep -x "${_package}" )" ]]; then
         msg_debug "Select a package ${_package} with an exact name match"
     else
-        msg_error "No package with an exact name match was found." 1
+        msg_error "No package with an exact name match was found."
+        exit 1
     fi
 
     # PKGBUILDをダウンロード
@@ -703,7 +753,8 @@ install_aur_package() {
         _conflicts_found=true
     fi
     if [[ "${_conflicts_found}" = true ]]; then
-        msg_error "A conflict was found." 1
+        msg_error "A conflict was found."
+        exit 1
     fi
 
 
@@ -778,7 +829,8 @@ search_aur_package() {
     local _aur_json=$(curl -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name-desc&arg=${_package}" | jq -r )
     local _found_result_count="$(echo "${_aur_json}" | jq -r ".resultcount")"
     if (( "${_found_result_count}" == 0 )); then
-        msg_error "Could not find all required packages:\n	${_package}" 1
+        msg_error "Could not find all required packages:\n	${_package}"
+        exit 1
     fi
     _aur_json=$(echo "${_aur_json}" | jq -r ".results[]")
 
@@ -827,7 +879,8 @@ install_package() {
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
-                #msg_error "Getting the AUR package has not been implemented yet." 1
+                #msg_error "Getting the AUR package has not been implemented yet.
+                #exit 1
             fi
         fi
     done
@@ -848,7 +901,8 @@ operation_sync(){
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
-                #msg_error "Getting the AUR package has not been implemented yet." 1
+                #msg_error "Getting the AUR package has not been implemented yet."
+                #exit 1
             fi
         done
     fi
@@ -858,7 +912,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:ays"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -979,6 +1033,10 @@ while :; do
             set -xv
             shift 1
             ;;
+        --msg-debug)
+            msgdebug=true
+            shift 1
+            ;;
         -h | --help)
             usage
             shift 1
@@ -1017,6 +1075,7 @@ case "${operation}" in
         exit 0
         ;;
     *)
-        msg_error "Undefined operation." 1
+        msg_error "Undefined operation."
+        exit 1
         ;;
 esac
