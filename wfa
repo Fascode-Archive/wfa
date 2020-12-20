@@ -281,7 +281,7 @@ msg() {
     _message="${@}"
 
     echo_type() {
-        __time
+        local __time
         if [[ "${_nolabel}" = false ]]; then
             if [[ "${_noadjust}" = false ]]; then
                 for __time in $( seq 1 $(( ${_label_space} - ${_word_count})) ); do
@@ -864,7 +864,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:ays"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -983,6 +983,10 @@ while :; do
         --bash-debug)
             bash_debug=true
             set -xv
+            shift 1
+            ;;
+        --msg-debug)
+            msgdebug=true
             shift 1
             ;;
         -h | --help)
