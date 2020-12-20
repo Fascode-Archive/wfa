@@ -16,6 +16,9 @@ declare -A ja_JP=(
     ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ %s を選択します"
     ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
     ["Get PKGBUILD from %s"]="%sからPKGBUILDを取得します"
+    ["PKGBUILD has already been downloaded"]="PKGBUILDは既にダウンロードされています"
+    ["Do you want to overwrite and download? [n] :"]="上書きダウンロードしますか？ [n] :"
+    ["Unpacking the tarball of PKGBUILD ..."]="PKGBUILDを展開しています ..."
 )
 ######################################################################################
 # ここからデフォルト設定の定義
@@ -699,7 +702,7 @@ install_aur_package() {
     fi
 
     # PKGBUILDをダウンロード
-    msg_info "Download PKGBUILD of %s" "${_package}" #ここまで翻訳
+    msg_info "Download PKGBUILD of %s" "${_package}"
     _aur_json=$(echo "${_aur_json}" | jq -r ".results[] | select(.Name == \"${_package}\")" )
     local _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
     local _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
@@ -708,7 +711,7 @@ install_aur_package() {
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
     local _download_pkgbuild=true
     if [[ -f "${_pkgbuild_archive_path}" ]]; then
-        msg_warn "PKGBUILD has already been downloaded."
+        msg_warn "PKGBUILD has already been downloaded"
         msg_warn -n "Do you want to overwrite and download? [n] :"
         local _yes_or_no
         if [[ "${noconfirm}" = true ]]; then
@@ -728,7 +731,7 @@ install_aur_package() {
     fi
 
     # PKGBUILDを展開
-    msg_info "Unpacking the tarball of PKGBUILD ..."
+    msg_info "Unpacking the tarball of PKGBUILD ..."  #ここまで翻訳
     tar -xv -f "${_pkgbuild_archive_path}" -C "${wfa_cache_dir}/build/" > /dev/null 2>&1
 
     # .SRCINFOを解析
