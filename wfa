@@ -2,7 +2,22 @@
 
 set -eu
 
+
 ######################################################################################
+# ここから翻訳データ
+
+declare -A ja_JP=(
+    ["Undefined operation."]="未定義のオペレーションです。"
+    ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
+    ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
+    ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
+    ["Install dependent packages..."]="依存パッケージをインストールします..."
+    ["No package with an exact name match was found."]="完全に一致する名前のパッケージが見つかりませんでした。"
+    ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ ％s を選択します"
+    ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
+)
+######################################################################################
+# ここからデフォルト設定の定義
 
 #-- wfa configs --#
 wfa_version="0.1"
@@ -62,22 +77,9 @@ sudo_command="/usr/bin/sudo"
 sudo_args=""
 
 
-######################################################################################
-# ここから翻訳データ
-
-declare -A ja_JP=(
-    ["Undefined operation."]="未定義のオペレーションです。"
-    ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
-    ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
-    ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
-    ["Install dependent packages..."]="依存パッケージをインストールします..."
-    ["No package with an exact name match was found."]="完全に一致する名前のパッケージが見つかりませんでした。"
-    ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ ％s を選択します"
-    ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
-)
 
 ######################################################################################
-# ここからいろいろシェルスクリプト
+# ここからメッセージ関連の関数定義
 
 
 # メッセージ出力の制御
@@ -451,7 +453,9 @@ msg_error() {
     fi
 }
 
-# ここから下のテキストは翻訳可能です
+######################################################################################
+# ここから実際の処理開始
+# ここから下のメッセージは翻訳可能です
 
 # rm helper
 # Delete the file if it exists.
