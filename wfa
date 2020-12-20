@@ -70,6 +70,10 @@ declare -A ja_JP=(
     ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
     ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
     ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
+    ["Install dependent packages..."]="依存パッケージをインストールします..."
+    ["No package with an exact name match was found."]="完全に一致する名前のパッケージが見つかりませんでした。"
+    ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ ％ sを選択します"
+    ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
 )
 
 ######################################################################################
@@ -683,14 +687,14 @@ install_aur_package() {
     #msg_debug "Found package: $(echo ${_found_packages} | tr '\n' ' ')"
 
     if [[ -n "$(echo "${_found_packages}" | grep -x "${_package}" )" ]]; then
-        msg_debug "Select a package ${_package} with an exact name match"
+        msg_debug "Select a package %s with an exact name match" "${_package}"
     else
         msg_error "No package with an exact name match was found."
         exit 1
     fi
 
     # PKGBUILDをダウンロード
-    msg_info "Download PKGBUILD of ${_package}"
+    msg_info "Download PKGBUILD of %s" "${_package}" #ここまで翻訳
     _aur_json=$(echo "${_aur_json}" | jq -r ".results[] | select(.Name == \"${_package}\")" )
     local _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
     local _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
