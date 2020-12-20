@@ -635,7 +635,7 @@ install_aur_package() {
     local _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
     local _arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
     local _arch _pkgname
-    if [[ "${_arch_array[@]}" = "any" ]]; then
+    if [[ "${_arch_array[*]}" = "any" ]]; then
         _arch="any"
     else
         _arch="$(uname -m)"
