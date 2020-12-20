@@ -7,14 +7,15 @@ set -eu
 # ここから翻訳データ
 
 declare -A ja_JP=(
-    ["Undefined operation."]="未定義のオペレーションです。"
+    ["Undefined operation"]="未定義のオペレーションです"
     ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
     ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
-    ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
+    ["Setting that command is not currently supported"]="そのコマンドの設定は現在サポートされていません"
     ["Install dependent packages..."]="依存パッケージをインストールします..."
-    ["No package with an exact name match was found."]="完全に一致する名前のパッケージが見つかりませんでした。"
+    ["No package with an exact name match was found"]="完全に一致する名前のパッケージが見つかりませんでした"
     ["Select a package %s with an exact name match"]="名前が完全に一致するパッケージ %s を選択します"
     ["Download PKGBUILD of %s"]="%s のPKGBUILDをダウンロード"
+    ["Get PKGBUILD from %s"]="%sからPKGBUILDを取得します"
 )
 ######################################################################################
 # ここからデフォルト設定の定義
@@ -534,7 +535,7 @@ usage (){
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         _wfa_usage_${operation}
     else
-        msg_error "Undefined operation."
+        msg_error "Undefined operation"
         exit 1
     fi
 }
@@ -603,7 +604,7 @@ add_args() {
             ;;
         *)
             msg_error "Failed to set the argument of %s" "${_target}"
-            msg_error "Setting that command is not currently supported."
+            msg_error "Setting that command is not currently supported"
             exit 1
             ;;
     esac
@@ -693,7 +694,7 @@ install_aur_package() {
     if [[ -n "$(echo "${_found_packages}" | grep -x "${_package}" )" ]]; then
         msg_debug "Select a package %s with an exact name match" "${_package}"
     else
-        msg_error "No package with an exact name match was found."
+        msg_error "No package with an exact name match was found"
         exit 1
     fi
 
@@ -702,7 +703,7 @@ install_aur_package() {
     _aur_json=$(echo "${_aur_json}" | jq -r ".results[] | select(.Name == \"${_package}\")" )
     local _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
     local _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
-    msg_debug "Get PKGBUILD from ${_aur_snapshot_url}"
+    msg_debug "Get PKGBUILD from %s" "${_aur_snapshot_url}"
 
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
     local _download_pkgbuild=true
@@ -1083,7 +1084,7 @@ case "${operation}" in
         exit 0
         ;;
     *)
-        msg_error "Undefined operation."
+        msg_error "Undefined operation"
         exit 1
         ;;
 esac
