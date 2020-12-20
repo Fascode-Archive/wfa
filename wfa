@@ -2,32 +2,56 @@
 
 set -eu
 
+######################################################################################
+
+#-- wfa configs --#
 wfa_version="0.1"
+wfa_name="WFA"
+wfa_command="wfa"
+
+#-- options (str) --#
 aururl="https://aur.archlinux.org/"
 operation="none"
 
-msgdebug=false
-nocolor=false
+#-- options (bool) --#
+
 debug=false
 force_aur=false
+msgdebug=false
+nocolor=false
 noconfirm=false
-nomakepkgconf=false
 nodeps=false
+nomakepkgconf=false
 
-
-makepkg_command="/usr/bin/makepkg"
+#-- makepkg --#
+# 実行ファイル
+makepkg_command="/usr/bin/makepkg" 
+# 設定ファイル
 makepkg_config="/etc/makepkg.conf"
+# 引数
 makepkg_args=""
 
+#-- pacman --#
+# 実行ファイル
 pacman_command="/usr/bin/pacman"
+# 設定ファイル
 pacman_config="/etc/pacman.conf"
+# 引数
 pacman_args=""
 
+#-- git --#
+# 実行ファイル
 git_command="/usr/bin/git"
+# 引数
 git_args=""
 
+#-- gpg --#
+# 実行ファイル
 gpg_command="/usr/bin/gpg"
+# 引数
 gpg_args=""
+
+######################################################################################
 
 
 # メッセージ出力の制御
@@ -291,7 +315,7 @@ msg() {
 # Show an INFO message
 # $1: message string
 msg_info() {
-    local _msg_opts="-a WFA"
+    local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
         shift 1
@@ -304,7 +328,7 @@ msg_info() {
 # Show an Warning message
 # $1: message string
 msg_warn() {
-    local _msg_opts="-a WFA"
+    local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
         shift 1
@@ -318,7 +342,7 @@ msg_warn() {
 # $1: message string
 msg_debug() {
     if [[ "${debug}" = true ]]; then
-        local _msg_opts="-a WFA"
+        local _msg_opts="-a ${wfa_name}"
         if [[ "${1}" = "-n" ]]; then
             _msg_opts="${_msg_opts} -o -n"
             shift 1
@@ -333,7 +357,7 @@ msg_debug() {
 # $1: message string
 # $2: exit code number (with 0 does not exit)
 msg_error() {
-    local _msg_opts="-a WFA"
+    local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
         shift 1
@@ -369,23 +393,23 @@ usage (){
     local _wfa_usage
     _wfa_usage() {
         echo "Usage:"
-        echo "wfa"
-        echo "wfa <operation> [...]"
+        echo "${wfa_command}"
+        echo "${wfa_command} <operation> [...]"
         echo
         echo "operations:"
-        echo "    wfa {-h --help}"
-        echo "    wfa {-V --version}"
-       #echo "    wfa {-D --database}    <options> <package(s)>"
-       #echo "    wfa {-F --files}       [options] [package(s)]"
-        echo "    wfa {-Q --query}       [options] [package(s)]"
-        echo "    wfa {-R --remove}      [options] <package(s)>"
-        echo "    wfa {-S --sync}        [options] [package(s)]"
-       #echo "    wfa {-T --deptest}     [options] [package(s)]"
-       #echo "    wfa {-U --upgrade}     [options] <file(s)>"
+        echo "    ${wfa_command} {-h --help}"
+        echo "    ${wfa_command} {-V --version}"
+       #echo "    ${wfa_command} {-D --database}    <options> <package(s)>"
+       #echo "    ${wfa_command} {-F --files}       [options] [package(s)]"
+        echo "    ${wfa_command} {-Q --query}       [options] [package(s)]"
+        echo "    ${wfa_command} {-R --remove}      [options] <package(s)>"
+        echo "    ${wfa_command} {-S --sync}        [options] [package(s)]"
+       #echo "    ${wfa_command} {-T --deptest}     [options] [package(s)]"
+       #echo "    ${wfa_command} {-U --upgrade}     [options] <file(s)>"
        #echo
        #echo "New operations:"
-       #echo "    wfa {-P --show}        [options]"
-       #echo "    wfa {-G --getpkgbuild} [package(s)]"
+       #echo "    ${wfa_command} {-P --show}        [options]"
+       #echo "    ${wfa_command} {-G --getpkgbuild} [package(s)]"
         echo
         echo "New options:"
         echo "       --repo             Assume targets are from the repositories"
@@ -408,7 +432,7 @@ usage (){
 
     local _wfa_usage_sync
     _wfa_usage_sync() {
-        echo "usage:  wfa {-S --sync} [options] [package(s)]"
+        echo "usage:  ${wfa_command} {-S --sync} [options] [package(s)]"
         echo "options:"
         echo "  -b, --dbpath <path>  set an alternate database location"
         echo "      --config <path>  set an alternate configuration file"
