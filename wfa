@@ -381,7 +381,7 @@ msg_info() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} info "${@}"
+    msg ${_msg_opts} info "$(translate "${@}")"
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
@@ -400,7 +400,7 @@ msg_warn() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} warn "${@}"
+    msg ${_msg_opts} warn "$(translate "${@}")"
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
@@ -420,7 +420,7 @@ msg_debug() {
         fi
         [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
         [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-        msg ${_msg_opts} debug "${@}"
+        msg ${_msg_opts} debug "$(translate "${@}")"
     fi
     if [[ "${bash_debug}" = true ]]; then
         set -xv
@@ -441,7 +441,7 @@ msg_error() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} error $(translate "${@}")
+    msg ${_msg_opts} error "$(translate "${@}")"
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
