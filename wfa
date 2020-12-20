@@ -63,6 +63,17 @@ sudo_args=""
 
 
 ######################################################################################
+# ここから翻訳データ
+
+declare -A ja_JP=(
+    ["Undefined operation."]="未定義のオペレーションです。"
+    ["only one operation may be used at a time"]="一度に使用できるオペレーションは1つだけです"
+    ["Failed to set the argument of %s"]="%sの引数の設定に失敗しました"
+    ["Setting that command is not currently supported."]="そのコマンドの設定は現在サポートされていません。"
+)
+
+######################################################################################
+# ここからいろいろシェルスクリプト
 
 
 # メッセージ出力の制御
@@ -323,6 +334,40 @@ msg() {
     done
 }
 
+# テキストの翻訳
+#set -xv
+translate() {
+    local _msg_translate
+    _msg_translate() {
+        local _get_text
+        local _locale="$(echo "${LANG}" | cut -d "." -f 1)"
+
+        _get_text() {
+            set +eu
+            local _translated_text="$(eval echo '$'{${_locale}["${@}"]})"
+            set -eu
+            if [[ -z "${_translated_text}" ]]; then
+                echo "${*}"
+            else
+                echo "${_translated_text}"
+            fi
+        }
+
+        local _text _fulltext=() _main
+
+        if declare -p "${_locale}" 2> /dev/null 1>/dev/null; then
+            _main="$(_get_text ${1})"
+        else
+            _main="${1}"
+        fi
+        shift 1
+        echo "$(printf "${_main}" ${@})"
+    }
+    _msg_translate "${@}"
+}
+
+
+
 # Show an INFO message
 # $1: message string
 msg_info() {
@@ -396,11 +441,13 @@ msg_error() {
     fi
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} error "${@}"
+    msg ${_msg_opts} error $(translate "${@}")
     if [[ "${bash_debug}" = true ]]; then
         set -xv
     fi
 }
+
+# ここから下のテキストは翻訳可能です
 
 # rm helper
 # Delete the file if it exists.
@@ -547,7 +594,8 @@ add_args() {
             msg_debug "sudo ARGS: ${sudo_args}"
             ;;
         *)
-            msg_error "Failed to set the argument of ${_target}\nSetting that command is not currently supported."
+            msg_error "Failed to set the argument of %s" "${_target}"
+            msg_error "Setting that command is not currently supported."
             exit 1
             ;;
     esac
