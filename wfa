@@ -521,6 +521,9 @@ add_args() {
             sudo_args=${_args_array[@]}
             msg_debug "sudo ARGS: ${sudo_args}"
             ;;
+        *)
+            msg_error "Failed to set the argument of ${_target}\nSetting that command is not currently supported." 1
+            ;;
     esac
 }
 
