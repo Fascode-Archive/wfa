@@ -57,7 +57,8 @@ declare -A ja_JP=(
     ["Could not find all required packages:\n	%s"]="必要なすべてのパッケージが見つかりませんでした	%s"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
 
-
+    ["(Orphaned)"]="(メンテナ不在)"
+    ["[Installed]"]="[インストール済み]"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
 )
 ######################################################################################
@@ -540,10 +541,12 @@ text() {
     done
     shift $((OPTIND - 1))
 
+    _message="${@}"
+    _message="$(translate "${@}")"
     if [[ "${nocolor}" = true ]]; then
         echo -ne "${@}"
     else
-        echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n ";${_decotypes}")m${@}\e[m"
+        echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n ";${_decotypes}")m${_message}\e[m"
     fi
 }
 
