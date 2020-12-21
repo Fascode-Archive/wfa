@@ -939,7 +939,7 @@ search_aur_package() {
 
     local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
 
-    local  _found_package __pkgver __popularity __vote __pkgdesc __orphaned __installed
+    local  _found_package __pkgver __popularity __vote __pkgdesc __orphaned __installed __output_text=()
     for _found_package in ${_found_pkgname[@]}; do
         __orphaned=false
         __installed=false
@@ -962,10 +962,20 @@ search_aur_package() {
             __installed=true
         fi
 
-    
-        echo "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity})) $(if [[ "${__orphaned}" = true ]]; then text -bc red "(Orphaned)"; fi) $(if [[ "${__installed}" = true ]]; then text -bc cyan "[Installed]"; fi)"
+        __output_text+=(
+            "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity}))"
+        )
+        
+        if [[ "${__orphaned}" = true ]]; then
+            __output_text+=("$(text -bc red "(Orphaned)")")
+        fi
+
+        if [[ "${__installed}" = true ]]; then
+            __output_text+=("$(text -bc cyan "[Installed]")")
+        fi
+        echo "${__output_text[*]}"
         echo "    ${__pkgdesc}"
-        unset __pkgver __popularity __vote __pkgdesc _found_json __orphaned __installed
+        unset __pkgver __popularity __vote __pkgdesc _found_json __orphaned __installed __output_text
     done
 }
 
