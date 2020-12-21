@@ -640,7 +640,7 @@ check_installed_package() {
 }
 
 get_cache_dir() {
-    local _user_config_dir
+    local _user_config_dir _cache_dir
     if [[ -v XDG_CONFIG_HOME ]]; then
         _user_config_dir="${XDG_CONFIG_HOME}"
     else
@@ -650,12 +650,11 @@ get_cache_dir() {
         source "${_use_config_dir}/user-dirs.dirs"
     fi
     if [[ -v XDG_CACHE_HOME ]]; then
-        echo -n "${XDG_CACHE_HOME}"
-        return 0
+        _cache_dir="${XDG_CACHE_HOME}"
     else
-        echo -n "${HOME}/.cache"
-        return 0
+        _cache_dir="${HOME}/.cache"
     fi
+    echo -n "${_cache_dir}"
 }
 
 # Usage: get_srcinfo_data <path> <var>
@@ -787,7 +786,7 @@ install_aur_package() {
     # srcdirの確認
     if [[ -d "${_build_dir}/src" ]]; then
         msg_info "Found ${_build_dir}/src"
-        msg_info "Packages to cleanBuild? [n] :"
+        msg_info -n "Packages to cleanBuild? [n] :"
         local _yes_or_no
         unset _yes_or_no
         if [[ "${noconfirm}" = true ]]; then
