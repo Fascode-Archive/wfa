@@ -1053,7 +1053,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:aysu"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1180,6 +1180,27 @@ while :; do
             ;;
         --msg-debug)
             msgdebug=true
+            shift 1
+            ;;
+        --color)
+            case "${2}" in
+                "never")
+                    nocolor=true
+                    add_args pacman "--color never"
+                    ;;
+                "always")
+                    nocolor=false
+                    add_args pacman "--color always"
+                    ;;
+                "auto")
+                    msg_error "auto is not currently supported."
+                    add_args pacman "--color auto"
+                    ;;
+            esac
+            ;;
+        --nocolor)
+            nocolor=true
+            add_args pacman "--color never"
             shift 1
             ;;
         -h | --help)
