@@ -357,7 +357,7 @@ translate() {
 
         _get_text() {
             set +eu
-            local _translated_text="$(eval echo '$'{${_locale}["${*}"]})"
+            local _translated_text="$(eval echo '$'{${_locale}[\"${*}\"]})"
             set -eu
             if [[ -z "${_translated_text}" ]]; then
                 echo "${*}"
