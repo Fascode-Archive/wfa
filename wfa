@@ -19,6 +19,8 @@ declare -A ja_JP=(
     ["PKGBUILD has already been downloaded"]="PKGBUILDは既にダウンロードされています"
     ["Do you want to overwrite and download? [n] :"]="上書きダウンロードしますか？ [n] :"
     ["Unpacking the tarball of PKGBUILD ..."]="PKGBUILDを展開しています ..."
+
+    ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
 )
 ######################################################################################
 # ここからデフォルト設定の定義
@@ -45,6 +47,7 @@ noconfirm=false
 nodeps=false
 nomakepkgconf=false
 sync_search=false
+sync_upgrade=false
 
 #-- makepkg --#
 # 実行ファイル
@@ -898,6 +901,10 @@ install_package() {
     done
 }
 
+upgrade_aur_package() {
+    msg_error "This is a feature that has not been implemented yet"
+}
+
 operation_sync(){
     local _package
     if [[ "${sync_search}" = true ]]; then
@@ -906,6 +913,10 @@ operation_sync(){
         done
         "${pacman_command}" ${pacman_args} ${specified_packages[@]}
     else
+        if [[ "${sync_upgrade}" = true ]]; then
+            upgrade_aur_package
+            run_pacman ${pacman_args} --sysupgrade
+        fi
         for _package in ${specified_packages[@]}; do
             if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
                 # 公式パッケージなのでpacmanでそのままインストール
@@ -923,8 +934,8 @@ operation_sync(){
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:ays"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug"
+_opt_short="QRShVdb:aysu"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -991,6 +1002,10 @@ while :; do
         -s | --search)
             add_args pacman "--search"
             sync_search=true
+            shift 1
+            ;;
+        -u | --sysupgrade)
+            sync_upgrade=true
             shift 1
             ;;
         --aururl)
