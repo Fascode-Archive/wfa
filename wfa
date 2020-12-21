@@ -374,7 +374,7 @@ translate() {
             _main="${1}"
         fi
         shift 1
-        echo "$(printf "${_main}" ${@})"
+        echo "$(printf "${_main}" "${@}")"
     }
     _msg_translate "${@}"
 }
