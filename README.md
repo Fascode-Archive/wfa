@@ -18,6 +18,14 @@
 <h3> Install </h3>
 Install <code>wfa-git</code> from AUR
 
+<h3> Feature </h3>
+<ul>
+    <li>Written in a shell script.</li>
+    <li>Designed for multiple languages</li>
+    <li>Works with a single file</li>
+    <!-- <li>Supports the same arguments as pacman</li> -->
+</ul>
+
 
 <h3> Screen shot </h3>
 <p><img src="/images/install-google-chrome.png"></p>
