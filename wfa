@@ -995,7 +995,7 @@ operation_sync(){
         for _package in ${specified_packages[@]}; do
             search_aur_package "${_package}"
         done
-        "${pacman_command}" ${pacman_args} ${specified_packages[@]}
+        "${pacman_command}" ${pacman_args} ${specified_packages[@]} || :
     else
         if [[ "${sync_upgrade}" = true ]]; then
             upgrade_aur_package
