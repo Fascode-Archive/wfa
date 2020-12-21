@@ -840,9 +840,9 @@ install_aur_package() {
     local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".makedepends[]?")"
     local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".depends[]?")"
     local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".conflicts[]?")"
-    msg_info "makedepends: %s" "${_makedepends}"
-    msg_info "depends: %s" "${_depends}"
-    msg_info "conflicts: %s " "${_conflicts}"
+    msg_debug "makedepends: %s" "${_makedepends}"
+    msg_debug "depends: %s" "${_depends}"
+    msg_debug "conflicts: %s " "${_conflicts}"
 
 
     # 衝突を確認
