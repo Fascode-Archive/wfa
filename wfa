@@ -52,6 +52,7 @@ declare -A ja_JP=(
     [".SRCINFO was not found.\nGenerating it using makepkg"]=".SCRINFOが見つかりませんでした。makepkgを使用して生成しています"
     ["Conflict(s) was found"]="衝突が見つかりました"
     ["Install dependent packages..."]="依存パッケージをインストールします..."
+    ["Found %s"]="%s を見つけました"
     ["Packages to cleanBuild? [n] :"]="パッケージをクリーンビルドしますか？ [n] :"
     ["Could not find all required packages:\n	%s"]="必要なすべてのパッケージが見つかりませんでした	%s"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
@@ -148,7 +149,7 @@ msg() {
     local _output="stdout"
 
     _help() {
-        echo "usage ${0} [option] [type] [message]"
+        echo "usage msg [option] [type] [message]"
         echo
         echo "Display a message with a colored app name and message type label"
         echo
@@ -497,6 +498,55 @@ msg_error() {
     fi
 }
 
+text() {
+    local OPTIND OPTARG arg _textcolor _decotypes=()
+    while getopts "c:b" arg; do
+        case ${arg} in
+            c)
+                case "${OPTARG}" in
+                    "black")
+                        _textcolor="30"
+                        ;;
+                    "red")
+                        _textcolor="31"
+                        ;;
+                    "green")
+                        _textcolor="32"
+                        ;;
+                    "yellow")
+                        _textcolor="33"
+                        ;;
+                    "blue")
+                        _textcolor="34"
+                        ;;
+                    "magenta")
+                        _textcolor="35"
+                        ;;
+                    "cyan")
+                        _textcolor="36"
+                        ;;
+                    "white")
+                        _textcolor="37"
+                        ;;
+                    *)
+                        return 1
+                        ;;
+                esac
+                ;;
+            b)
+                _decotypes+=(1)
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    if [[ "${nocolor}" = true ]]; then
+        echo -ne "${@}"
+    else
+        echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n ";${_decotypes}")m${@}\e[m"
+    fi
+}
+
 ######################################################################################
 # ここから実際の処理開始
 # ここから下のメッセージは翻訳可能です
@@ -823,7 +873,7 @@ install_aur_package() {
     # ビルド準備
     # srcdirの確認
     if [[ -d "${_build_dir}/src" ]]; then
-        msg_info "Found ${_build_dir}/src"
+        msg_info "Found %s" "${_build_dir}/src"
         msg_info -n "Packages to cleanBuild? [n] :"
         local _yes_or_no
         unset _yes_or_no
@@ -878,7 +928,7 @@ install_aur_package() {
 # AURのパッケージを検索
 search_aur_package() {
     local _package="${1}"
-    msg_info "Searching in AUR ..."
+    #msg_info "Searching in AUR ..."
     local _aur_json=$(curl -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name-desc&arg=${_package}" | jq -r )
     local _found_result_count="$(echo "${_aur_json}" | jq -r ".resultcount")"
     if (( "${_found_result_count}" == 0 )); then
@@ -887,12 +937,7 @@ search_aur_package() {
     fi
     _aur_json=$(echo "${_aur_json}" | jq -r ".results[]")
 
-    #echo ${_aur_json} 
-
     local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
-
-
-
 
     local  _found_package __pkgver __popularity __vote __pkgdesc
     for _found_package in ${_found_pkgname[@]}; do
@@ -902,7 +947,7 @@ search_aur_package() {
         __vote="$(echo "${_found_json}" | jq -r ".NumVotes" )"
         __pkgdesc="$(echo "${_found_json}" | jq -r ".Description" )"
     
-        echo "aur/${_found_package} ${__pkgver} (+${__vote} ${__popularity})"
+        echo "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity}))"
         echo "    ${__pkgdesc}"
         unset __pkgver __popularity __vote __pkgdesc _found_json
     done
