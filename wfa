@@ -1137,7 +1137,7 @@ while :; do
             ;;
         --config)
             pacman_config="${2}"
-            add_args pacman "--config \"${2}\""
+            add_args pacman "--config ${2}"
             shift 2
             ;;
         --makepkg)
