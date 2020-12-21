@@ -953,7 +953,7 @@ search_aur_package() {
 
         # 孤児判定
         #参考: https://www.366service.com/jp/qa/7c95f46e5236039134ff5b862ae2cd13
-        if ! echo "${_found_json}" | jq -r --exit-status ".Maintainer"; then
+        if ! echo "${_found_json}" | jq -r --exit-status ".Maintainer" 1> /dev/null 2> /dev/null ; then
             __orphaned=true
         fi
 
@@ -963,7 +963,7 @@ search_aur_package() {
         fi
 
     
-        echo "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity})) $(if [[ "${__orphaned}" = true ]]; then text -bc red "(Orphaned)"; fi) $(if [[ "${__installed}" = true ]]; then text -bc cyan "(Installed)"; fi)"
+        echo "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity})) $(if [[ "${__orphaned}" = true ]]; then text -bc red "(Orphaned)"; fi) $(if [[ "${__installed}" = true ]]; then text -bc cyan "[Installed]"; fi)"
         echo "    ${__pkgdesc}"
         unset __pkgver __popularity __vote __pkgdesc _found_json __orphaned __installed
     done
