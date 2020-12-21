@@ -500,7 +500,7 @@ msg_error() {
 }
 
 text() {
-    local OPTIND OPTARG arg _textcolor _decotypes=()
+    local OPTIND OPTARG arg _textcolor _decotypes=() _message
     while getopts "c:b" arg; do
         case ${arg} in
             c)
@@ -954,6 +954,11 @@ search_aur_package() {
         __vote="$(echo "${_found_json}" | jq -r ".NumVotes" )"
         __pkgdesc="$(echo "${_found_json}" | jq -r ".Description" )"
 
+        # 人気度の少数2位以下を四捨五入
+        # 参考: http://www.rivhiro-weather.com/knowledge/?p=536
+        msg_debug "Row popularity: %s" "${__popularity}"
+        __popularity="$(printf "%g\n" "${__popularity}" | awk '{printf("%4.2f", $1)}')"
+
         # 孤児判定
         #参考: https://www.366service.com/jp/qa/7c95f46e5236039134ff5b862ae2cd13
         if ! echo "${_found_json}" | jq -r --exit-status ".Maintainer" 1> /dev/null 2> /dev/null ; then
@@ -966,7 +971,7 @@ search_aur_package() {
         fi
 
         __output_text+=(
-            "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b ${__vote} ${__popularity}))"
+            "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b "${__vote} ${__popularity}"))"
         )
         
         if [[ "${__orphaned}" = true ]]; then
