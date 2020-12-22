@@ -85,6 +85,7 @@ declare -A C=()
 wfa_version="0.1"
 wfa_name="WFA"
 wfa_command="wfa"
+wfa_path="$(dirname "$(realpath "${0}")")/$(basename "${0}")"
 
 #-- options (int) --#
 option_y_count=0
@@ -696,6 +697,10 @@ run_sudo() {
 
 run_pacman() {
     run_sudo "${pacman_command}" ${@}
+}
+
+wfa() {
+    "${wfa_path}" ${@}
 }
 
 # pacmanの引数を追加する
