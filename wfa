@@ -425,6 +425,9 @@ translate() {
             local _translated_text="$(eval echo '$'{${_locale}[\"${*}\"]})"
             set -eu
             if [[ -z "${_translated_text}" ]]; then
+                if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
+                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found" 1>&2
+                fi
                 echo "${*}"
             else
                 echo "${_translated_text}"
@@ -526,8 +529,8 @@ msg_error() {
 }
 
 text() {
-    local OPTIND OPTARG arg _textcolor _decotypes=() _message
-    while getopts "c:b" arg; do
+    local OPTIND OPTARG arg _textcolor _decotypes=() _message _notranslate=false
+    while getopts "c:bn" arg; do
         case ${arg} in
             c)
                 case "${OPTARG}" in
@@ -563,12 +566,17 @@ text() {
             b)
                 _decotypes+=(1)
                 ;;
+            n)
+                _notranslate=true
+                ;;
         esac
     done
     shift $((OPTIND - 1))
 
     _message="${@}"
-    _message="$(translate "${@}")"
+    if [[ "${_notranslate}" = false ]]; then
+        _message="$(translate "${@}")"
+    fi
     if [[ "${nocolor}" = true ]]; then
         echo -ne "${@}"
     else
