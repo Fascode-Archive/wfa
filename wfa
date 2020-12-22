@@ -1100,6 +1100,14 @@ operation_sync(){
 
 
 operation_vote() {
+
+    # aurvoteの確認
+    if ! type aurvote 1> /dev/null 2> /dev/null; then
+        msg_error "There is no aurvote"
+        msg_error "Please install with \"wfa -S aurvote\""
+        exit 1
+    fi
+
     local _package _aur_json _found_result_count _pkgver _before_popularity _before_vote
     for _package in ${specified_packages[@]}; do
 
