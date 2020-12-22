@@ -1056,20 +1056,29 @@ operation_remove() {
 
 # Usage: install_package <package1> <package2>...
 install_package() {
-    local _package
+    local _package _repo_packages=() _aur_packages=()
     for _package in ${@}; do
         if ! check_installed_package "${_package}"; then
             if ! check_aur_package "${_package}"; then
                 # 公式パッケージなのでpacmanでそのままインストール
-                run_pacman ${pacman_args} "${_package}"
+                _repo_packages+=("${_package}")
             else
                 # AUR上のパッケージの場合の処理
-                install_aur_package "${_package}"
-                #msg_error "Getting the AUR package has not been implemented yet.
-                #exit 1
+                _aur_packages+=("${_package}")
             fi
         fi
     done
+
+    if (( "${#_repo_packages[@]}" > 0 )); then
+        run_pacman --asdeps ${pacman_args} "${_repo_packages[@]}"
+    fi
+
+    if (( "${#_aur_packages[@]}" > 0 )); then
+        unset _package
+        for _package in ${_aur_packages[@]}; do
+            install_aur_package "${_package}"
+        done
+    fi
 }
 
 upgrade_aur_package() {
