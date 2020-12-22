@@ -631,7 +631,7 @@ usage (){
         echo
         echo "      --color <when>   colorize the output"
         echo "      --config <path>  set an alternate configuration file"
-        echo "      --noconfirm      do not ask for any confirmation"
+        echo "      --confirm        always ask for confirmation"
         echo "      --debug          display debug messages"
         echo "      --noconfirm      do not ask for any confirmation"
 
@@ -1085,7 +1085,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:aysuc"q
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1249,6 +1249,10 @@ while :; do
         --nocolor)
             nocolor=true
             add_args pacman "--color never"
+            shift 1
+            ;;
+        --confirm)
+            noconfirm=false
             shift 1
             ;;
         -h | --help)
