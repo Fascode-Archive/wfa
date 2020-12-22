@@ -125,6 +125,11 @@ sudo_command="/usr/bin/sudo"
 # 引数
 sudo_args=""
 
+#-- curl --#
+# 実行ファイル
+curl_command="/usr/bin/curl"
+# 引数
+curl_args=""
 
 
 ######################################################################################
@@ -615,6 +620,8 @@ usage (){
         echo "    --makepkgconf <file>  makepkg.conf file to use"
         echo "    --nomakepkgconf       Use the default makepkg.conf"
         echo
+        echo "wfa specific options:"
+        echo "    -c --clean            Remove unneeded dependencies"
     }
 
     local _wfa_usage_sync
@@ -628,11 +635,13 @@ usage (){
         echo "  -u, --sysupgrade     upgrade installed packages (-uu enables downgrades)"
         echo "  -y, --refresh        download fresh package databases from the server"
         echo "                       (-yy to force a refresh even if up to date)"
-        echo
+        echo "      --arch <arch>    set an alternate architecture"
         echo "      --color <when>   colorize the output"
         echo "      --config <path>  set an alternate configuration file"
         echo "      --confirm        always ask for confirmation"
         echo "      --debug          display debug messages"
+        echo "      --disable-download-timeout"
+        echo "                       use relaxed timeouts for download"
         echo "      --noconfirm      do not ask for any confirmation"
 
     }
@@ -673,7 +682,7 @@ run_pacman() {
 
 # pacmanの引数を追加する
 # https://github.com/FascodeNet/aptpac/blob/master/aptpac のADD_OPTION関数を参考
-# Usage: add_args [pacman/makepkg] <args1> <args2>...
+# Usage: add_args [pacman/makepkg/git/gpg/sudo/curl] <args1> <args2>...
 add_args() {
     local _target="${1}"
     local _args_array
@@ -710,6 +719,12 @@ add_args() {
             _args_array+=(${@})
             sudo_args=${_args_array[@]}
             msg_debug "sudo ARGS: ${sudo_args}"
+            ;;
+        "curl")
+            _args_array=(${curl_args})
+            _args_array+="${@}"
+            curl_args=${_args_array[@]}
+            msg_debug "curl ARGS: ${curl_args}"
             ;;
         *)
             msg_error "Failed to set the argument of %s" "${_target}"
@@ -792,7 +807,7 @@ install_aur_package() {
 
     # AurJsonから値を取得
     msg_info "Searching in AUR ..."
-    local _aur_json=$(curl -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name&arg=${_package}" | jq -r)
+    local _aur_json=$("${curl_command}" ${curl_args} -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name&arg=${_package}" | jq -r)
     if (( "$(echo "${_aur_json}" | jq -r ".resultcount")" == 0 )); then
         msg_error "Could not find all required packages:\n	${_package}"
         exit 1
@@ -834,7 +849,7 @@ install_aur_package() {
     fi
     if [[ "${_download_pkgbuild}" = true ]]; then
         remove "${_pkgbuild_archive_path}"
-        curl -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
+        "${curl_command}"  ${curl_args} -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
     fi
 
     # PKGBUILDを展開
@@ -946,7 +961,7 @@ install_aur_package() {
 search_aur_package() {
     local _package="${1}"
     #msg_info "Searching in AUR ..."
-    local _aur_json=$(curl -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name-desc&arg=${_package}" | jq -r )
+    local _aur_json=$("${curl_command}" ${curl_args} -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name-desc&arg=${_package}" | jq -r )
     local _found_result_count="$(echo "${_aur_json}" | jq -r ".resultcount")"
     if (( "${_found_result_count}" == 0 )); then
         msg_error "Could not find all required packages:\n	%s" "${_package}"
@@ -1085,7 +1100,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:aysuc"q
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1254,6 +1269,19 @@ while :; do
         --confirm)
             noconfirm=false
             shift 1
+            ;;
+        --disable-download-timeout)
+            add_args curl "--max-time 0"
+            add_args pacman "--disable-download-timeout"
+            shift 1
+            ;;
+        --curl)
+            curl_command="${2}"
+            shift 2
+            ;;
+        --curlflags)
+            add_args curl "${2}"
+            shift 2
             ;;
         -h | --help)
             usage
