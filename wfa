@@ -57,6 +57,8 @@ declare -A ja_JP=(
     ["Could not find all required packages: %s"]="必要なすべてのパッケージが見つかりませんでした: %s"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
     ["Package not found on AUR: %s"]="パッケージがAUR上から見つかりませんでした: "
+    ["There is no aurvote"]="aurvote が見つかりませんでした"
+    ["Please install with \"wfa -S aurvote\""]="\"wfa -S aurvote\"でインストールしてください"
 
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
