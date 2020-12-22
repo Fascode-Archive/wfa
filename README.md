@@ -3,10 +3,30 @@
 <p>wfa is an AUR helper written in Bash that is being developed to replace yaourt.</p>
 
 <p>
-    <img src="https://img.shields.io/travis/com/Hayao0819/wfa/master?style=flat-square">
-    <img src="https://img.shields.io/github/license/Hayao0819/wfa?style=flat-square">
-    <img src="https://img.shields.io/github/issues/Hayao0819/wfa?style=flat-square">
-    <img src="https://img.shields.io/aur/version/wfa-git?style=flat-square">
+    <a href="https://travis-ci.com/github/Hayao0819/wfa/">
+        <img src="https://img.shields.io/travis/com/Hayao0819/wfa/master?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/Hayao0819/wfa?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa/issues">
+        <img src="https://img.shields.io/github/issues/Hayao0819/wfa?style=flat-square">
+    </a>
+    <a href="https://aur.archlinux.org/packages/wfa-git">
+        <img src="https://img.shields.io/aur/version/wfa-git?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa/blob/master/wfa">
+        <img src="https://img.shields.io/github/size/Hayao0819/wfa/wfa?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa">
+        <img src="https://img.shields.io/tokei/lines/github/hayao0819/wfa?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa">
+        <img src="https://img.shields.io/github/last-commit/Hayao0819/wfa?style=flat-square">
+    </a>
+    <a href="https://github.com/Hayao0819/wfa">
+        <img src="https://img.shields.io/github/stars/Hayao0819/wfa?style=flat-square">
+    </a>
 </p>
 
 <h3> WARNING </h3>
