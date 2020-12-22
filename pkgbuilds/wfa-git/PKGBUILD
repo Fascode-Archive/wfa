@@ -9,6 +9,9 @@ url="https://github.com/Hayao0819/wfa"
 license=('WTFPL')
 depends=('sudo' 'pacman' 'jq' 'python3' 'curl' 'pyalpm' 'python-srcinfo')
 makedepends=('git')
+optdepends=(
+  'aurvote: Voting support'
+)
 source=("git+https://github.com/Hayao0819/wfa")
 md5sums=('SKIP')
 
