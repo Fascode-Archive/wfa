@@ -74,6 +74,7 @@ option_y_count=0
 sync_clean_count=0
 
 #-- options (str) --#
+arch="$(uname -m)"
 aururl="https://aur.archlinux.org/"
 operation="none"
 
@@ -926,7 +927,7 @@ install_aur_package() {
     if [[ "${_arch_array[*]}" = "any" ]]; then
         _arch="any"
     else
-        _arch="$(uname -m)"
+        _arch="${arch}"
     fi
     local _PKGEXT=$(
         source "${makepkg_config}"
@@ -1084,7 +1085,7 @@ operation_sync(){
 # Parse options
 ARGUMENT="${@}"
 _opt_short="QRShVdb:aysuc"q
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1165,6 +1166,11 @@ while :; do
             quiet=true
             add_args pacman "--quiet"
             shift 1
+            ;;
+        --arch)
+            arch="${2}"
+            add_args pacman "--arch ${2}"
+            shift 2
             ;;
         --aururl)
             aururl="${2}"
