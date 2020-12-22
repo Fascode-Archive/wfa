@@ -59,6 +59,8 @@ declare -A ja_JP=(
     ["Package not found on AUR: %s"]="パッケージがAUR上から見つかりませんでした: "
     ["There is no aurvote"]="aurvote が見つかりませんでした"
     ["Please install with %s"]="%s でインストールしてください"
+    ["Voted for %s"]="%s に投票しました"
+    ["Unvoted for %s"]="%s の投票を解除しました"
 
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
