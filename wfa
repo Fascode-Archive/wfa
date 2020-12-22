@@ -1204,7 +1204,8 @@ while :; do
             shift 2
             ;;
         --gitflags)
-            git_args="${2}"
+            #git_args="${2}"
+            add_args git "${2}"
             shift 2
             ;;
         --makepkgconfig)
