@@ -71,6 +71,7 @@ wfa_command="wfa"
 
 #-- options (int) --#
 option_y_count=0
+sync_clean_count=0
 
 #-- options (str) --#
 aururl="https://aur.archlinux.org/"
@@ -729,6 +730,7 @@ check_installed_package() {
     fi
 }
 
+# ~/.cacheに相当するディレクトリを返します
 get_cache_dir() {
     local _user_config_dir _cache_dir
     if [[ -v XDG_CONFIG_HOME ]]; then
@@ -1025,6 +1027,17 @@ upgrade_aur_package() {
 
 operation_sync(){
     local _package
+    if (( "${sync_clean_count}" >= 1 )); then
+        remove "$(get_cache_dir)/wfa"
+        run_pacman ${pacman_args} $(
+            local _count
+            for _count in $(seq 1 ${sync_clean_count}); do
+                echo -n "-c "
+            done
+        )
+    fi
+
+
     if [[ "${sync_search}" = true ]]; then
         for _package in ${specified_packages[@]}; do
             search_aur_package "${_package}"
@@ -1052,8 +1065,8 @@ operation_sync(){
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:aysu"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor"
+_opt_short="QRShVdb:aysuc"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor.clean"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1124,6 +1137,10 @@ while :; do
             ;;
         -u | --sysupgrade)
             sync_upgrade=true
+            shift 1
+            ;;
+        -c | --clean)
+            sync_clean_count=$(( sync_clean_count + 1 ))
             shift 1
             ;;
         --aururl)
