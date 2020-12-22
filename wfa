@@ -620,7 +620,17 @@ usage (){
         echo "usage:  ${wfa_command} {-S --sync} [options] [package(s)]"
         echo "options:"
         echo "  -b, --dbpath <path>  set an alternate database location"
+        echo "  -c, --clean          remove old packages from cache directory (-cc for all)"
+        echo "  -d, --nodeps         skip dependency version checks (-dd to skip all checks)"
+        echo "  -s, --search <regex> search remote repositories for matching strings"
+        echo "  -u, --sysupgrade     upgrade installed packages (-uu enables downgrades)"
+        echo "  -y, --refresh        download fresh package databases from the server"
+        echo "                       (-yy to force a refresh even if up to date)"
+        echo
+        echo "      --color <when>   colorize the output"
         echo "      --config <path>  set an alternate configuration file"
+        echo "      --noconfirm      do not ask for any confirmation"
+        echo "      --debug          display debug messages"
         echo "      --noconfirm      do not ask for any confirmation"
 
     }
