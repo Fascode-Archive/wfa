@@ -58,7 +58,7 @@ declare -A ja_JP=(
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
     ["Package not found on AUR: %s"]="パッケージがAUR上から見つかりませんでした: "
     ["There is no aurvote"]="aurvote が見つかりませんでした"
-    ["Please install with \"wfa -S aurvote\""]="\"wfa -S aurvote\"でインストールしてください"
+    ["Please install with %s"]="%s でインストールしてください"
 
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
@@ -1106,7 +1106,7 @@ operation_vote() {
     # aurvoteの確認
     if ! type aurvote 1> /dev/null 2> /dev/null; then
         msg_error "There is no aurvote"
-        msg_error "Please install with \"wfa -S aurvote\""
+        msg_error "Please install with %s" "\"wfa -S aurvote\""
         exit 1
     fi
 
