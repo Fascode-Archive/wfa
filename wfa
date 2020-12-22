@@ -88,6 +88,7 @@ nodeps=false
 nomakepkgconf=false
 sync_search=false
 sync_upgrade=false
+quiet=false
 
 #-- makepkg --#
 # 実行ファイル
@@ -954,49 +955,56 @@ search_aur_package() {
 
     local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
 
-    local  _found_package __pkgver __popularity __vote __pkgdesc __orphaned __installed __output_text=()
-    for _found_package in ${_found_pkgname[@]}; do
-        __orphaned=false
-        __installed=false
-        _found_json="$(echo ${_aur_json} | jq "select(.Name == \"${_found_package}\")")"
+    if [[ "${quiet}" = true ]]; then
+        local _IFS="${IFS}"
+        IFS=$'\n'
+        echo "${_found_pkgname[*]}"
+        IFS="${_IFS}"
+    else
+        local  _found_package __pkgver __popularity __vote __pkgdesc __orphaned __installed __output_text=()
+        for _found_package in ${_found_pkgname[@]}; do
+            __orphaned=false
+            __installed=false
+            _found_json="$(echo ${_aur_json} | jq "select(.Name == \"${_found_package}\")")"
 
-        #echo "${_found_json}"
-        __pkgver="$(echo "${_found_json}" | jq -r ".Version" )"
-        __popularity="$(echo "${_found_json}" | jq -r ".Popularity" )"
-        __vote="$(echo "${_found_json}" | jq -r ".NumVotes" )"
-        __pkgdesc="$(echo "${_found_json}" | jq -r ".Description" )"
+            #echo "${_found_json}"
+            __pkgver="$(echo "${_found_json}" | jq -r ".Version" )"
+            __popularity="$(echo "${_found_json}" | jq -r ".Popularity" )"
+            __vote="$(echo "${_found_json}" | jq -r ".NumVotes" )"
+            __pkgdesc="$(echo "${_found_json}" | jq -r ".Description" )"
 
-        # 人気度の少数2位以下を四捨五入
-        # 参考: http://www.rivhiro-weather.com/knowledge/?p=536
-        msg_debug "Row popularity: %s" "${__popularity}"
-        __popularity="$(printf "%g\n" "${__popularity}" | awk '{printf("%4.2f", $1)}')"
+            # 人気度の少数2位以下を四捨五入
+            # 参考: http://www.rivhiro-weather.com/knowledge/?p=536
+            msg_debug "Row popularity: %s" "${__popularity}"
+            __popularity="$(printf "%g\n" "${__popularity}" | awk '{printf("%4.2f", $1)}')"
 
-        # 孤児判定
-        #参考: https://www.366service.com/jp/qa/7c95f46e5236039134ff5b862ae2cd13
-        if ! echo "${_found_json}" | jq -r --exit-status ".Maintainer" 1> /dev/null 2> /dev/null ; then
-            __orphaned=true
-        fi
+            # 孤児判定
+            #参考: https://www.366service.com/jp/qa/7c95f46e5236039134ff5b862ae2cd13
+            if ! echo "${_found_json}" | jq -r --exit-status ".Maintainer" 1> /dev/null 2> /dev/null ; then
+                __orphaned=true
+            fi
 
-        # インストール済み判定
-        if check_installed_package "${_found_package}"; then
-            __installed=true
-        fi
+            # インストール済み判定
+            if check_installed_package "${_found_package}"; then
+                __installed=true
+            fi
 
-        __output_text+=(
-            "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b "${__vote} ${__popularity}"))"
-        )
-        
-        if [[ "${__orphaned}" = true ]]; then
-            __output_text+=("$(text -bc red "(Orphaned)")")
-        fi
+            __output_text+=(
+                "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b "${__vote} ${__popularity}"))"
+            )
+            
+            if [[ "${__orphaned}" = true ]]; then
+                __output_text+=("$(text -bc red "(Orphaned)")")
+            fi
 
-        if [[ "${__installed}" = true ]]; then
-            __output_text+=("$(text -bc cyan "[Installed]")")
-        fi
-        echo "${__output_text[*]}"
-        echo "    ${__pkgdesc}"
-        unset __pkgver __popularity __vote __pkgdesc _found_json __orphaned __installed __output_text
-    done
+            if [[ "${__installed}" = true ]]; then
+                __output_text+=("$(text -bc cyan "[Installed]")")
+            fi
+            echo "${__output_text[*]}"
+            echo "    ${__pkgdesc}"
+            unset __pkgver __popularity __vote __pkgdesc _found_json __orphaned __installed __output_text
+        done
+    fi
 }
 
 # バージョンを表示して終了
@@ -1075,8 +1083,8 @@ operation_sync(){
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="QRShVdb:aysuc"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean"
+_opt_short="QRShVdb:aysuc"q
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1151,6 +1159,11 @@ while :; do
             ;;
         -c | --clean)
             sync_clean_count=$(( sync_clean_count + 1 ))
+            shift 1
+            ;;
+        -q | --quiet)
+            quiet=true
+            add_args pacman "--quiet"
             shift 1
             ;;
         --aururl)
