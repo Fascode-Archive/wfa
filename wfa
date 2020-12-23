@@ -429,7 +429,7 @@ translate() {
             set -eu
             if [[ -z "${_translated_text}" ]]; then
                 if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
-                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found" 1>&2
+                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning")   (No translation data was found)" 1>&2
                 fi
                 echo "${*}"
             else
@@ -660,6 +660,11 @@ usage (){
         echo
         echo "wfa specific options:"
         echo "    -c --clean            Remove unneeded dependencies"
+        echo
+        echo "This program is an alpha version that is not yet stable"
+        echo "If you find a bug, please share it on GitHub"
+        echo "https://github.com/hayao0819/wfa/issues"
+        echo
     }
 
     local _wfa_usage_sync
@@ -1215,6 +1220,18 @@ unavailable_in_this_operation() {
     exit 1
 }
 
+# オペレーションを実行します
+run_operation() {
+    local _operation="${1}"
+    msg_debug "Operation: ${_operation}"
+
+    msg_warn "This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"
+    msg_warn ""
+    msg_warn ""
+
+    operation_${_operation}
+}
+
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucq"
@@ -1468,17 +1485,8 @@ fi
 
 # set_operationで設定された操作を実行
 case "${operation}" in
-    "version")
-        operation_version
-        ;;
-    "sync")
-        operation_sync
-        ;;
-    "remove")
-        operation_remove
-        ;;
-    "vote")
-        operation_vote
+    "version" | "sync" | "remove" | "vote")
+        run_operation "${operation}"
         ;;
     "none")
         exit 0
