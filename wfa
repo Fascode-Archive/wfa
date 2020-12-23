@@ -1185,7 +1185,7 @@ operation_vote() {
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="AQRShVdb:aysuc"q
+_opt_short="AQRShVdb:aysucq"
 _opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
