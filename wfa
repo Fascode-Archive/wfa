@@ -65,6 +65,7 @@ declare -A ja_JP=(
     ["Please install with %s"]="%s でインストールしてください"
     ["Voted for %s"]="%s に投票しました"
     ["Unvoted for %s"]="%s の投票を解除しました"
+    ["Help for this operation is not implemented"]="このオペレーションのヘルプは実装されていません"
 
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
@@ -680,7 +681,7 @@ usage (){
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         _wfa_usage_${operation}
     else
-        msg_error "Undefined operation"
+        msg_error "Help for this operation is not implemented"
         exit 1
     fi
 }
