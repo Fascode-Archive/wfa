@@ -1183,10 +1183,15 @@ operation_vote() {
     done
 }
 
+unavailable_in_this_operation() {
+    msg_error "This option is not available in the current operation"
+    exit 1
+}
+
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucq"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1259,8 +1264,39 @@ while :; do
             sync_search=true
             shift 1
             ;;
-        -u | --sysupgrade)
-            sync_upgrade=true
+        -u | --sysupgrade | --unneeded)
+            case "${1}" in
+                --sysupgrade)
+                    if [[ "${operation}" = "sync" ]]; then
+                        sync_upgrade=true
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                --unneeded)
+                    if [[ "${operation}" = "remove" ]]; then
+                        add_args pacman "--unneeded"
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                -u)
+                    case "${operation}" in
+                        "sync")
+                            sync_upgrade=true
+                            ;;
+                        "remove")
+                            add_args pacman "--unneeded"
+                            ;;
+                        "none")
+                            :
+                            ;;
+                        *)
+                            unavailable_in_this_operation
+                            ;;
+                    esac
+                    ;;
+            esac
             shift 1
             ;;
         -c | --clean)
