@@ -70,6 +70,8 @@ declare -A ja_JP=(
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
+
+    ["Please make a contract with me and become a Puella Magi !"]="僕と契約して魔法少女になってよ！ "
 )
 
 
@@ -529,9 +531,11 @@ msg_error() {
     fi
 }
 
+# 使い方
+# text [-b/-c color/-n/-f/-l/]
 text() {
-    local OPTIND OPTARG arg _textcolor _decotypes=() _message _notranslate=false
-    while getopts "c:bn" arg; do
+    local OPTIND OPTARG arg _textcolor _decotypes="" _message _notranslate=false
+    while getopts "c:bnfl" arg; do
         case ${arg} in
             c)
                 case "${OPTARG}" in
@@ -565,7 +569,13 @@ text() {
                 esac
                 ;;
             b)
-                _decotypes+=(1)
+                _decotypes="${_decotypes};1"
+                ;;
+            f)
+                _decotypes="${_decotypes};5"
+                ;;
+            l)
+                _decotypes="${_decotypes};4"
                 ;;
             n)
                 _notranslate=true
@@ -581,7 +591,7 @@ text() {
     if [[ "${nocolor}" = true ]]; then
         echo -ne "${@}"
     else
-        echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n ";${_decotypes}")m${_message}\e[m"
+        echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n "${_decotypes}")m${_message}\e[m"
     fi
 }
 
@@ -1208,7 +1218,7 @@ unavailable_in_this_operation() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucq"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1425,6 +1435,12 @@ while :; do
         --curlflags)
             add_args curl "${2}"
             shift 2
+            ;;
+        --puella)
+            text -flb "Please make a contract with me and become a Puella Magi !"
+            echo
+            shift 1
+            exit 0
             ;;
         -h | --help)
             usage
