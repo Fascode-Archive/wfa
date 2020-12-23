@@ -674,6 +674,23 @@ usage (){
 
     }
 
+    local _wfa_usage_remove
+    _wfa_usage_remove() {
+        echo "usage:  ${wfa_command} {-R --remove} [options] <package(s)>"
+        echo "options:"
+        echo "  -b, --dbpath <path>  set an alternate database location"
+        echo "  -d, --nodeps         skip dependency version checks (-dd to skip all checks)"
+        echo "  -u, --unneeded       remove unneeded packages"
+        echo "      --arch <arch>    set an alternate architecture"
+        echo "      --color <when>   colorize the output"
+        echo "      --config <path>  set an alternate configuration file"
+        echo "      --confirm        always ask for confirmation"
+        echo "      --debug          display debug messages"
+        echo "      --disable-download-timeout"
+        echo "                       use relaxed timeouts for download"
+        echo "      --noconfirm      do not ask for any confirmation"
+    }
+
     if [[ "${operation}" = "none" ]]; then
         _wfa_usage
     elif [[ "${_pacman_help}" = true ]]; then
