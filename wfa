@@ -1239,7 +1239,7 @@ run_operation() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucq"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1462,6 +1462,10 @@ while :; do
             echo
             shift 1
             exit 0
+            ;;
+        --wfa-debug)
+            debug=true
+            shift 1
             ;;
         -h | --help)
             usage
