@@ -157,6 +157,22 @@ curl_args=""
 # ここからメッセージ関連の関数定義
 
 
+start_msg_debug() {
+    if [[ "${msgdebug}" = true ]]; then
+        set -xv
+    else
+        set +vx
+    fi
+}
+
+end_msg_debug() {
+    if [[ "${bash_debug}" = true ]]; then
+        set -xv
+    else
+        set +xv
+    fi
+}
+
 # メッセージ出力の制御
 # https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
 msg() {
@@ -416,7 +432,6 @@ msg() {
 }
 
 # テキストの翻訳
-#set -xv
 translate() {
     local _msg_translate
     _msg_translate() {
@@ -432,7 +447,7 @@ translate() {
             set -eu
             if [[ -z "${_translated_text}" ]]; then
                 if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
-                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning")   (No translation data was found)" 1>&2
+                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
                 fi
                 echo "${*}"
             else
@@ -458,9 +473,7 @@ translate() {
 # Show an INFO message
 # $1: message string
 msg_info() {
-    if [[ "${msgdebug}" = false ]]; then
-        set +xv
-    fi
+    start_msg_debug
     local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
@@ -469,17 +482,13 @@ msg_info() {
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
     msg ${_msg_opts} info "$(translate "${@}")"
-    if [[ "${bash_debug}" = true ]]; then
-        set -xv
-    fi
+    end_msg_debug
 }
 
 # Show an Warning message
 # $1: message string
 msg_warn() {
-    if [[ "${msgdebug}" = false ]]; then
-        set +xv
-    fi
+    start_msg_debug
     local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
@@ -488,17 +497,13 @@ msg_warn() {
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
     msg ${_msg_opts} warn "$(translate "${@}")"
-    if [[ "${bash_debug}" = true ]]; then
-        set -xv
-    fi
+    end_msg_debug
 }
 
 # Show an debug message
 # $1: message string
 msg_debug() {
-    if [[ "${msgdebug}" = false ]]; then
-        set +xv
-    fi
+    start_msg_debug
     if [[ "${debug}" = true ]]; then
         local _msg_opts="-a ${wfa_name}"
         if [[ "${1}" = "-n" ]]; then
@@ -509,18 +514,14 @@ msg_debug() {
         [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
         msg ${_msg_opts} debug "$(translate "${@}")"
     fi
-    if [[ "${bash_debug}" = true ]]; then
-        set -xv
-    fi
+    end_msg_debug
 }
 
 # Show an ERROR message then exit with status
 # $1: message string
 # $2: exit code number (with 0 does not exit)
 msg_error() {
-    if [[ "${msgdebug}" = false ]]; then
-        set +xv
-    fi
+    start_msg_debug
     local _msg_opts="-a ${wfa_name}"
     if [[ "${1}" = "-n" ]]; then
         _msg_opts="${_msg_opts} -o -n"
@@ -529,14 +530,13 @@ msg_error() {
     [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
     [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
     msg ${_msg_opts} error "$(translate "${@}")"
-    if [[ "${bash_debug}" = true ]]; then
-        set -xv
-    fi
+    end_msg_debug
 }
 
 # 使い方
 # text [-b/-c color/-n/-f/-l/]
 text() {
+    start_msg_debug
     local OPTIND OPTARG arg _textcolor _decotypes="" _message _notranslate=false
     while getopts "c:bnfl" arg; do
         case ${arg} in
@@ -596,6 +596,8 @@ text() {
     else
         echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n "${_decotypes}")m${_message}\e[m"
     fi
+
+    end_msg_debug
 }
 
 ######################################################################################
