@@ -66,10 +66,11 @@ declare -A ja_JP=(
     ["Voted for %s"]="%s に投票しました"
     ["Unvoted for %s"]="%s の投票を解除しました"
     ["Help for this operation is not implemented"]="このオペレーションのヘルプは実装されていません"
-
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
     ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
+    ["Operation: %s"]="オペレーション: %s"
+    ["Raw popularity: %s"]="人気度の正確な値: %s"
 
     ["Please make a contract with me and become a Puella Magi !"]="僕と契約して魔法少女になってよ！ "
 )
@@ -1063,7 +1064,7 @@ search_aur_package() {
 
             # 人気度の少数2位以下を四捨五入
             # 参考: http://www.rivhiro-weather.com/knowledge/?p=536
-            msg_debug "Row popularity: %s" "${__popularity}"
+            msg_debug "Raw popularity: %s" "${__popularity}"
             __popularity="$(printf "%g\n" "${__popularity}" | awk '{printf("%4.2f", $1)}')"
 
             # 孤児判定
@@ -1230,7 +1231,7 @@ unavailable_in_this_operation() {
 # オペレーションを実行します
 run_operation() {
     local _operation="${1}"
-    msg_debug "Operation: ${_operation}"
+    msg_debug "Operation: %s" "${_operation}"
     msg_warn "This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"
 
     operation_${_operation}
