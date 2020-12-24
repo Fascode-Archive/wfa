@@ -827,6 +827,16 @@ check_installed_package() {
     fi
 }
 
+# 引数で渡されたオペレーションが指定されている場合のみ正常終了します。
+check_operation() {
+    local _operation="${1}"
+    if [[ "${_operation}" = "${operation}" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # ~/.cacheに相当するディレクトリを返します
 get_cache_dir() {
     local _user_config_dir _cache_dir
@@ -1324,7 +1334,8 @@ while :; do
         -s | --search | --recursive)
             case "${1}" in
                 --search)
-                    if [[ "${operation}" = "sync" ]]; then
+                    #if [[ "${operation}" = "sync" ]]; then
+                    if check_operation "sync"; then
                         add_args pacman "--search"
                         sync_search=true
                     else
@@ -1332,7 +1343,8 @@ while :; do
                     fi
                     ;;
                 --recursive)
-                    if [[ "${operation}" = "remove" ]]; then
+                    #if [[ "${operation}" = "remove" ]]; then
+                    if check_operation "rmeove"; then
                         add_args pacman "--recursive"
                     else
                         unavailable_in_this_operation
@@ -1358,14 +1370,16 @@ while :; do
         -u | --sysupgrade | --unneeded)
             case "${1}" in
                 --sysupgrade)
-                    if [[ "${operation}" = "sync" ]]; then
+                    #if [[ "${operation}" = "sync" ]]; then
+                    if check_operation "sync"; then
                         sync_upgrade=true
                     else
                         unavailable_in_this_operation
                     fi
                     ;;
                 --unneeded)
-                    if [[ "${operation}" = "remove" ]]; then
+                    #if [[ "${operation}" = "remove" ]]; then
+                    if check_operation "rmeove"; then
                         add_args pacman "--unneeded"
                     else
                         unavailable_in_this_operation
@@ -1393,14 +1407,16 @@ while :; do
         -c | --clean | --cascade)
             case "${1}" in
                 --clean)
-                    if [[ "${operation}" = "sync" ]]; then
+                    #if [[ "${operation}" = "sync" ]]; then
+                    if check_operation "sync"; then
                         sync_clean_count=$(( sync_clean_count + 1 ))
                     else
                         unavailable_in_this_operation
                     fi
                     ;;
                 --cascade)
-                    if [[ "${operation}" = "remove"  ]]; then
+                    #if [[ "${operation}" = "remove" ]]; then
+                    if check_operation "rmeove"; then
                         add_args pacman "--cascade"
                     else
                         unavailable_in_this_operation
