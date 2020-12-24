@@ -963,16 +963,12 @@ install_aur_package() {
 
     # 衝突を確認
     local _pkg _conflicts_found=false
-    for _pkg in ${_conflicts[@]}; do
-        if "${pacman_command}" -Qq "${_pkg}" > /dev/null 2>&1 ; then
+    for _pkg in ${_conflicts[@]} ${_package}; do
+        if "${pacman_command}" -Qq "${_pkg}" > /dev/null 2>&1 && [[ ! "$("${pacman_command}" -Qq "${_pkg}" 2> /dev/null)" = "${_package}" ]]; then
             _conflicts_found=true
             msg_error "${_package} is colliding with ${_pkg}"
         fi
     done
-    if "${pacman_command}" -Qq "${_package}" > /dev/null 2>&1 &&  [[ ! "$("${pacman_command}" -Qq "${_package}" 2> /dev/null)" = "${_package}" ]]; then
-        msg_error "${_package} is colliding with $("${pacman_command}" -Qq "${_package}")"
-        _conflicts_found=true
-    fi
     if [[ "${_conflicts_found}" = true ]]; then
         msg_error "Conflict(s) was found"
         exit 1
