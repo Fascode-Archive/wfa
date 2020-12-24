@@ -1106,7 +1106,18 @@ operation_version() {
 }
 
 operation_remove() {
-    run_pacman ${pacman_args} "${specified_packages[@]}"
+    local _package _not_found=false
+    for _package in ${specified_packages[@]}; do
+        if ! check_installed_package "${_package}"; then
+            msg_error "target not found: %s" "${_package}"
+            _not_found=true
+        fi
+    done
+    if [[ "${_not_found}" = true ]]; then
+        exit 1
+    else
+        run_pacman ${pacman_args} "${specified_packages[@]}"
+    fi
 }
 
 # Usage: install_package <package1> <package2>...
