@@ -1241,7 +1241,7 @@ run_operation() {
 
 # Parse options
 ARGUMENT="${@}"
-_opt_short="AQRShVdb:aysucq"
+_opt_short="AQRShVdb:aysucqn"
 _opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug,cascade"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
@@ -1385,6 +1385,10 @@ while :; do
         -q | --quiet)
             quiet=true
             add_args pacman "--quiet"
+            shift 1
+            ;;
+        -n | --nosave)
+            add_args pacman "--nosave"
             shift 1
             ;;
         --arch)
