@@ -1310,9 +1310,38 @@ while :; do
             option_y_count=$(( option_y_count + 1 ))
             shift 1
             ;;
-        -s | --search)
-            add_args pacman "--search"
-            sync_search=true
+        -s | --search | --recursive)
+            case "${1}" in
+                --search)
+                    if [[ "${operation}" = "sync" ]]; then
+                        add_args pacman "--search"
+                        sync_search=true
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                --recursive)
+                    if [[ "${operation}" = "remove" ]]; then
+                        add_args pacman "--recursive"
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                -s)
+                    case "${operation}" in
+                        "sync")
+                            add_args pacman "--search"
+                            sync_search=true
+                            ;;
+                        "remove")
+                            add_args pacman "--recursive"
+                            ;;
+                        *)
+                            unavailable_in_this_operation
+                            ;;
+                    esac
+                    ;;
+            esac
             shift 1
             ;;
         -u | --sysupgrade | --unneeded)
