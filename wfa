@@ -1078,7 +1078,7 @@ search_aur_package() {
             fi
 
             __output_text+=(
-                "$(text -c blue -b "aur")/$(text -b "${_found_package}") $(text -c cyan "${__pkgver}") (+$(text -b "${__vote} ${__popularity}"))"
+                "$(text -n -c blue -b "aur")/$(text -n -b "${_found_package}") $(text -n -c cyan "${__pkgver}") (+$(text -n -b "${__vote} ${__popularity}"))"
             )
             
             if [[ "${__orphaned}" = true ]]; then
