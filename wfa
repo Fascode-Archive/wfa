@@ -1351,7 +1351,7 @@ while :; do
             shift 1
             ;;
         -c | --clean | --cascade)
-            case "${1}"
+            case "${1}" in
                 --clean)
                     if [[ "${operation}" = "sync" ]]; then
                         sync_clean_count=$(( sync_clean_count + 1 ))
