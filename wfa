@@ -980,7 +980,28 @@ install_aur_package() {
         msg_info "Install dependent packages..."
         local _force_aur="${force_aur}"
         force_aur=false
-        install_package "${_depends}"
+
+        local __package
+        local __install_list=()
+        local __remove_list=()
+
+        # dependsからインストールされていないパッケージをインストール
+        for __package in ${_depends}; do
+            if ! check_installed_package "${__package}"; then
+                __install_list+=("${__package}")
+            fi
+        done
+
+        # makedependsからインストールされていないパッケージをインストール
+        for __package in ${_makedepends}; do
+            if ! check_installed_package "${__package}"; then
+                __install_list+=("${__package}")
+                __remove_list+=("${__package}")
+            fi
+        done
+
+
+        install_package "${__install_list[*]}"
         force_aur="${_force_aur}"
         unset _force_aur
     fi
@@ -1038,6 +1059,10 @@ install_aur_package() {
 
     # インストール
     run_pacman -U --noconfirm ${_pkgfilelist[@]}
+
+
+    # ビルド後に不要なパッケージを削除
+    wfa -Rsnc --noconfirm "${__remove_list[*]}"
 }
 
 # AURのパッケージを検索
