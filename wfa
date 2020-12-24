@@ -1242,7 +1242,7 @@ run_operation() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucq"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug,cascade"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1350,8 +1350,36 @@ while :; do
             esac
             shift 1
             ;;
-        -c | --clean)
-            sync_clean_count=$(( sync_clean_count + 1 ))
+        -c | --clean | --cascade)
+            case "${1}"
+                --clean)
+                    if [[ "${operation}" = "sync" ]]; then
+                        sync_clean_count=$(( sync_clean_count + 1 ))
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                --cascade)
+                    if [[ "${operation}" = "remove"  ]]; then
+                        add_args pacman "--cascade"
+                    else
+                        unavailable_in_this_operation
+                    fi
+                    ;;
+                -c)
+                    case "${operation}" in
+                        "sync")
+                            sync_clean_count=$(( sync_clean_count + 1 ))
+                            ;;
+                        "remove")
+                            add_args pacman "--cascade"
+                            ;;
+                        *)
+                            unavailable_in_this_operation
+                            ;;
+                    esac
+                    ;;
+            esac
             shift 1
             ;;
         -q | --quiet)
