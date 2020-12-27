@@ -691,8 +691,12 @@ usage (){
         echo "      --debug          display debug messages"
         echo "      --disable-download-timeout"
         echo "                       use relaxed timeouts for download"
+        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
+        echo "      --hookdir <dir>  set an alternate hook location"
+        echo "      --ignore <pkg>   ignore a package upgrade (can be used more than once)"
+        echo "      --ignoregroup <grp>"
+        echo "                       ignore a group upgrade (can be used more than once)"
         echo "      --noconfirm      do not ask for any confirmation"
-
     }
 
     local _wfa_usage_remove
@@ -1284,7 +1288,7 @@ run_operation() {
 # Parse options
 ARGUMENT="${@}"
 _opt_short="AQRShVdb:aysucqn"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug,cascade"
+_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug,cascade,ignoregroup:,ignore:,hookdir:,gpgdir:"
 
 OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
 [[ ${?} != 0 ]] && exit 1
@@ -1578,6 +1582,22 @@ while :; do
         --wfa-debug)
             debug=true
             shift 1
+            ;;
+        --ignoregroup)
+            add_args pacman "--ignoregroup ${2}"
+            shift 2
+            ;;
+        --ignore)
+            add_args pacman "--ignore ${2}"
+            shift 2
+            ;;
+        --gpgdir)
+            add_args pacman "--gpgdir ${2}"
+            shift 2
+            ;;
+        --hookdir)
+            add_args pacman "--hookdir ${2}"
+            shift 2
             ;;
         -h | --help)
             usage
