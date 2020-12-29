@@ -1000,7 +1000,11 @@ install_aur_package() {
         for __package in ${_makedepends}; do
             if ! check_installed_package "${__package}"; then
                 __install_list+=("${__package}")
-                __remove_list+=("${__package}")
+
+                # もしdependsに含まれていないなら
+                if [[ $(printf '%s\n' "${_depends[@]}" | grep -qx "${__package}"; echo -n ${?} ) -eq 0 ]]; then
+                    __remove_list+=("${__package}")
+                fi
             fi
         done
 
