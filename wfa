@@ -171,9 +171,7 @@ translate() {
             echo "${_translated_text}"
         fi
     }
-
     local _text _fulltext=() _main
-
     if declare -p "${_locale}" 2> /dev/null 1>/dev/null; then
         _main="$(_get_text "${1}")"
     else
@@ -438,7 +436,7 @@ add_args() {
 }
 
 # 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
-check_aur_package() {
+check_repo_package() {
     # 参考: https://qiita.com/Hayao0819/items/a8740a17301fafa2fdab
     pacman -Ssq "${1}" 2>/dev/null | grep -o ".*${1}$" 1> /dev/null 2>&1 && return 0 || return 1;
 }
@@ -775,7 +773,7 @@ install_package() {
     local _package _repo_packages=() _aur_packages=()
     for _package in ${@}; do
         if ! check_installed_package "${_package}"; then
-            if ! check_aur_package "${_package}"; then
+            if check_repo_package "${_package}"; then
                 # 公式パッケージなのでpacmanでそのままインストール
                 _repo_packages+=("${_package}")
             else
@@ -826,7 +824,7 @@ operation_sync(){
             run_pacman ${pacman_args} --sysupgrade
         fi
         for _package in ${specified_packages[@]}; do
-            if ! check_aur_package "${_package}" && [[ "${force_aur}" = false ]]; then
+            if check_repo_package "${_package}" && [[ "${force_aur}" = false ]]; then
                 # 公式パッケージなのでpacmanでそのままインストール
                 run_pacman ${pacman_args} "${_package}"
             else
