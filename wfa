@@ -577,7 +577,7 @@ install_aur_package() {
     for _pkg in ${_conflicts[@]} ${_package}; do
         if "${pacman_command}" -Qq "${_pkg}" > /dev/null 2>&1 && [[ ! "$("${pacman_command}" -Qq "${_pkg}" 2> /dev/null)" = "${_package}" ]]; then
             _conflicts_found=true
-            msg_error "${_package} is colliding with ${_pkg}"
+            msg_error "${_package} is colliding with $("${pacman_command}" -Qq "${_pkg}" 2> /dev/null)"
         fi
     done
     if [[ "${_conflicts_found}" = true ]]; then
