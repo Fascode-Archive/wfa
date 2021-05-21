@@ -73,6 +73,7 @@ declare -A ja_JP=(
     ["Raw popularity: %s"]="人気度の正確な値: %s"
     ["This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"]="このプログラムはまだ安定しないアルファ版です\nもしバグを見つけたらGitHub上で共有してください\nhttps://github.com/hayao0819/wfa/issues"
     ["Please make a contract with me and become a Puella Magi !"]="僕と契約して魔法少女になってよ！ "
+    ["%s ARGS: %s"]="%s の引数: %s"
 )
 
 
@@ -156,470 +157,114 @@ curl_args=""
 
 ######################################################################################
 # ここからメッセージ関連の関数定義
-
-
-start_msg_debug() {
-    if [[ "${msgdebug}" = true ]]; then
-        set -xv
-    else
-        set +vx
-    fi
-}
-
-end_msg_debug() {
-    if [[ "${bash_debug}" = true ]]; then
-        set -xv
-    else
-        set +xv
-    fi
-}
-
-# メッセージ出力の制御
-# https://github.com/FascodeNet/alterlinux/blob/dev/tools/msg.sh の変数名にアンダーバーを追加し関数化
-msg() {
-    local OPTIND OPTARG arg
-
-    local _appname="msg.sh"
-    local _bash_debug=false
-    local _nocolor=false
-    local _echo_opts=""
-    local _message=""
-    local _msg_type="info"
-    local _msg_label=""
-    local _label_space="7"
-    local _adjust_chr=" "
-    local _customized_label=false
-    local _customized_label_color=false
-    local _nolabel=false
-    local _noappname=false
-    local _noadjust=false
-    local _output="stdout"
-
-    _help() {
-        echo "usage msg [option] [type] [message]"
-        echo
-        echo "Display a message with a colored app name and message type label"
-        echo
-        echo " General type:"
-        echo "    info                      General message"
-        echo "    warn                      Warning message"
-        echo "    error                     Error message"
-        echo "    debug                     Debug message"
-        echo
-        echo " General options:"
-        echo "    -a [name]                 Specify the app name"
-        echo "    -c [character]            Specify the character to adjust the label"
-        echo "    -l [label]                Specify the label."
-        echo "    -n | --nocolor            No output colored output"
-        echo "    -o [option]               Specify echo options"
-        echo "    -r [color]                Specify the color of label"
-        echo "    -s [number]               Specifies the label space."
-        echo "    -x | --bash-debug         Enables output bash debugging"
-        echo "    -h | --help               This help message"
-        echo
-        echo "         --nolabel            Do not output label"
-        echo "         --noappname          Do not output app name"
-        echo "         --noadjust           Do not adjust the width of the label"
-    }
-
-    while getopts "a:c:l:no:r:s:xh-:" arg; do
-        case ${arg} in
-                a) 
-                    _appname="${OPTARG}"
-                    ;;
-                c) 
-                    _adjust_chr="${OPTARG}"
-                    ;;
-                l) 
-                    _customized_label=true
-                    _msg_label="${OPTARG}"
-                    ;;
-                n)
-                    _nocolor=true
-                    ;;
-                o)
-                    _echo_opts="${OPTARG}"
-                    ;;
-                r)
-                    _customized_label_color=true
-                    case ${OPTARG} in
-                        "black")
-                            _labelcolor="30"
-                            ;;
-                        "red")
-                            _labelcolor="31"
-                            ;;
-                        "green")
-                            _labelcolor="32"
-                            ;;
-                        "yellow")
-                            _labelcolor="33"
-                            ;;
-                        "blue")
-                            _labelcolor="34"
-                            ;;
-                        "magenta")
-                            _labelcolor="35"
-                            ;;
-                        "cyan")
-                            _labelcolor="36"
-                            ;;
-                        "white")
-                            _labelcolor="37"
-                            ;;
-                        *)
-                            return 1
-                            ;;
-                    esac
-                    ;;
-                s)
-                    _label_space="${OPTARG}"
-                    ;;
-                x)
-                    _bash_debug=true
-                    set -xv
-                    ;;
-                h)
-                    _help
-                    shift 1
-                    exit 0
-                    ;;
-                -)
-                    case "${OPTARG}" in
-                        "nocolor")
-                            _nocolor=true
-                            ;;
-                        "bash-debug")
-                            _bash_debug=true
-                            set -xv
-                            ;;
-                        "help") 
-                            _help
-                            exit 0
-                            ;;
-                        "nolabel")
-                            _nolabel=true
-                            ;;
-                        "noappname")
-                            _noappname=true
-                            ;;
-                        "noadjust")
-                            _noadjust=true 
-                            ;;
-                        *)
-                            _help
-                            exit 1
-                            ;;
-                    esac
-        esac
-    done
-
-    shift $((OPTIND - 1))
-
-    # Color echo
-    #
-    # Text Color
-    # 30 => Black
-    # 31 => Red
-    # 32 => Green
-    # 33 => Yellow
-    # 34 => Blue
-    # 35 => Magenta
-    # 36 => Cyan
-    # 37 => White
-    #
-    # Background color
-    # 40 => Black
-    # 41 => Red
-    # 42 => Green
-    # 43 => Yellow
-    # 44 => Blue
-    # 45 => Magenta
-    # 46 => Cyan
-    # 47 => White
-    #
-    # Text decoration
-    # You can specify multiple decorations with ;.
-    # 0 => All attributs off (ノーマル)
-    # 1 => Bold on (太字)
-    # 4 => Underscore (下線)
-    # 5 => Blink on (点滅)
-    # 7 => Reverse video on (色反転)
-    # 8 => Concealed on
-
-    case ${1} in
-        "info")
-            _msg_type="type"
-            _output="stdout"
-            [[ "${_customized_label_color}" = false ]] && _labelcolor="32"
-            [[ "${_customized_label}"       = false ]] && _msg_label="Info"
-            shift 1
-            ;;
-        "warn")
-            _msg_type="warn"
-            _output="stdout"
-            [[ "${_customized_label_color}" = false ]] && _labelcolor="33"
-            [[ "${_customized_label}"       = false ]] && _msg_label="Warning"
-            shift 1
-            ;;
-        "debug")
-            _msg_type="debug"
-            _output="stdout"
-            [[ "${_customized_label_color}" = false ]] && _labelcolor="35"
-            [[ "${_customized_label}"       = false ]] && _msg_label="Debug"
-            shift 1
-            ;;
-        "error")
-            _msg_type="error"
-            _output="stderr"
-            [[ "${_customized_label_color}" = false ]] && _labelcolor="31"
-            [[ "${_customized_label}"       = false ]] && _msg_label="Error"
-            shift 1
-            ;;
-        "")
-            echo "Please specify the message type" >&2
-            exit 1
-            ;;
-        *)
-            echo "Unknown message type" >&2
-            exit 1
-            ;;
-    esac
-
-    _word_count="${#_msg_label}"
-    _message="${@}"
-
-    echo_type() {
-        local __time
-        if [[ "${_nolabel}" = false ]]; then
-            if [[ "${_noadjust}" = false ]]; then
-                for __time in $( seq 1 $(( ${_label_space} - ${_word_count})) ); do
-                    echo -ne "${_adjust_chr}"
-                done
-            fi
-            if [[ "${_nocolor}" = false ]]; then
-                echo -ne "\e[$([[ -v _backcolor ]] && echo -n "${_backcolor}"; [[ -v _labelcolor ]] && echo -n ";${_labelcolor}"; [[ -v _decotypes ]] && echo -n ";${_decotypes}")m${_msg_label}\e[m "
-            else
-                echo -ne "${_msg_label} "
-            fi
-        fi
-    }
-
-    echo_appname() {
-        if [[ "${_noappname}" = false ]]; then
-            if [[ "${_nocolor}" = false ]]; then
-                echo -ne "\e[36m[${_appname}]\e[m "
-            else
-                echo -ne "[${_appname}] "
-            fi
-        fi
-    }
-
-    for _count in $(seq "1" "$(echo -ne "${_message}\n" | wc -l)"); do
-        _echo_message=$(echo -ne "${_message}\n" |head -n "${_count}" | tail -n 1 )
-        _full_message="$(echo_appname)$(echo_type)${_echo_message}"
-        case "${_output}" in
-            "stdout")
-                echo ${_echo_opts} "${_full_message}" >&1
-                ;;
-            "stderr")
-                echo ${_echo_opts} "${_full_message}" >&2
-                ;;
-            *)
-                echo ${_echo_opts} "${_full_message}" > ${_output}
-                ;;
-        esac
-    done
-}
-
 # テキストの翻訳
 translate() {
-    local _msg_translate
-    _msg_translate() {
-        local _get_text
-        local _locale="$(echo "${LANG}" | cut -d "." -f 1)"
+    local _get_text
+    local _locale="$(echo "${LANG}" | cut -d "." -f 1)"
 
-        _get_text() {
-            set +eu
-            if [[ -z "${*}" ]]; then
-                return 1
-            fi
-            local _translated_text="$(eval echo '$'{${_locale}[\"${*}\"]})"
-            set -eu
-            if [[ -z "${_translated_text}" ]]; then
-                if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
-                    echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
-                fi
-                echo "${*}"
-            else
-                echo "${_translated_text}"
-            fi
-        }
-
-        local _text _fulltext=() _main
-
-        if declare -p "${_locale}" 2> /dev/null 1>/dev/null; then
-            _main="$(_get_text ${1})"
-        else
-            _main="${1}"
+    _get_text() {
+        set +eu
+        if [[ -z "${*}" ]]; then
+            return 1
         fi
-        shift 1
-        echo "$(printf "${_main}" "${@}")"
+        local _translated_text="$(eval echo '$'{${_locale}[\"${*}\"]})"
+        set -eu
+        if [[ -z "${_translated_text}" ]]; then
+            if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
+                echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
+            fi
+            echo "${*}"
+        else
+            echo "${_translated_text}"
+        fi
     }
-    _msg_translate "${@}"
+
+    local _text _fulltext=() _main
+
+    if declare -p "${_locale}" 2> /dev/null 1>/dev/null; then
+        _main="$(_get_text "${1}")"
+    else
+        _main="${1}"
+    fi
+    shift 1
+    echo "$(printf "${_main}" "${@}")"
 }
 
-
+msg_common(){
+    local _msg_opts=() _count
+    [[ "${1}" = "-n" ]] && _msg_opts+=("-n") && shift 1
+    [[ "${msgdebug}" = true ]] && set -xv || set +xv
+    local _label="${1}" && shift 1
+    local _message="$(text "${@}")"
+    for _count in $(seq "1" "$(echo -ne "${_message}\n" | wc -l)"); do
+        echo "$(text -nc cyan "[WFA]") ${_label} $(echo -ne "${_message}\n" | head -n "${_count}" | tail -n 1 )"
+    done
+    [[ "${bash_debug}" = true ]] && set -xv || set +xv
+}
 
 # Show an INFO message
 # $1: message string
-msg_info() {
-    start_msg_debug
-    local _msg_opts="-a ${wfa_name}"
-    if [[ "${1}" = "-n" ]]; then
-        _msg_opts="${_msg_opts} -o -n"
-        shift 1
-    fi
-    [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
-    [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} info "$(translate "${@}")"
-    end_msg_debug
-}
+msg_info() { msg_common "$(text -nc green "   Info")" "${@}"; }
 
 # Show an Warning message
 # $1: message string
-msg_warn() {
-    start_msg_debug
-    local _msg_opts="-a ${wfa_name}"
-    if [[ "${1}" = "-n" ]]; then
-        _msg_opts="${_msg_opts} -o -n"
-        shift 1
-    fi
-    [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
-    [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} warn "$(translate "${@}")"
-    end_msg_debug
-}
+msg_warn() { msg_common "$(text -nc yellow "Warning")" "${@}"; }
 
 # Show an debug message
 # $1: message string
-msg_debug() {
-    start_msg_debug
-    if [[ "${debug}" = true ]]; then
-        local _msg_opts="-a ${wfa_name}"
-        if [[ "${1}" = "-n" ]]; then
-            _msg_opts="${_msg_opts} -o -n"
-            shift 1
-        fi
-        [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
-        [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-        msg ${_msg_opts} debug "$(translate "${@}")"
-    fi
-    end_msg_debug
-}
+msg_debug() { [[ "${debug}" = true ]] && msg_common "$(text -nc magenta "  Debug")" "${@}"; return 0;}
 
 # Show an ERROR message then exit with status
 # $1: message string
 # $2: exit code number (with 0 does not exit)
 msg_error() {
-    start_msg_debug
-    local _msg_opts="-a ${wfa_name}"
-    if [[ "${1}" = "-n" ]]; then
-        _msg_opts="${_msg_opts} -o -n"
-        shift 1
-    fi
-    [[ "${msgdebug}" = true ]] && _msg_opts="${_msg_opts} -x"
-    [[ "${nocolor}"  = true ]] && _msg_opts="${_msg_opts} -n"
-    msg ${_msg_opts} error "$(translate "${@}")"
-    end_msg_debug
+    msg_common "$(text -nc red "  Error")" "${@}"
+    [[ -n "${2:-}" ]] && exit "${2}"
 }
 
 # 使い方
 # text [-b/-c color/-n/-f/-l/]
 text() {
-    start_msg_debug
     local OPTIND OPTARG arg _textcolor _decotypes="" _message _notranslate=false
     while getopts "c:bnfl" arg; do
-        case ${arg} in
+        case "${arg}" in
             c)
                 case "${OPTARG}" in
-                    "black")
-                        _textcolor="30"
-                        ;;
-                    "red")
-                        _textcolor="31"
-                        ;;
-                    "green")
-                        _textcolor="32"
-                        ;;
-                    "yellow")
-                        _textcolor="33"
-                        ;;
-                    "blue")
-                        _textcolor="34"
-                        ;;
-                    "magenta")
-                        _textcolor="35"
-                        ;;
-                    "cyan")
-                        _textcolor="36"
-                        ;;
-                    "white")
-                        _textcolor="37"
-                        ;;
-                    *)
-                        return 1
-                        ;;
+                    "black"   ) _textcolor="30" ;;
+                    "red"     ) _textcolor="31" ;;
+                    "green"   ) _textcolor="32" ;;
+                    "yellow"  ) _textcolor="33" ;;
+                    "blue"    ) _textcolor="34" ;;
+                    "magenta" ) _textcolor="35" ;;
+                    "cyan"    ) _textcolor="36" ;;
+                    "white"   ) _textcolor="37" ;;
+                    *         ) return 1        ;;
                 esac
                 ;;
-            b)
-                _decotypes="${_decotypes};1"
-                ;;
-            f)
-                _decotypes="${_decotypes};5"
-                ;;
-            l)
-                _decotypes="${_decotypes};4"
-                ;;
-            n)
-                _notranslate=true
-                ;;
+            b) _decotypes="${_decotypes};1" ;;
+            f) _decotypes="${_decotypes};5" ;;
+            l) _decotypes="${_decotypes};4" ;;
+            n) _notranslate=true            ;;
         esac
     done
-    shift $((OPTIND - 1))
-
-    _message="${@}"
-    if [[ "${_notranslate}" = false ]]; then
-        _message="$(translate "${@}")"
-    fi
+    shift "$((OPTIND - 1))"
+    [[ "${_notranslate}" = false ]] && _message="$(translate "${@}")" || _message="${@}"
     if [[ "${nocolor}" = true ]]; then
         echo -ne "${@}"
     else
         echo -ne "\e[$([[ -v _textcolor ]] && echo -n ";${_textcolor}"; [[ -v _decotypes ]] && echo -n "${_decotypes}")m${_message}\e[m"
     fi
-
-    end_msg_debug
 }
 
 ######################################################################################
 # ここから実際の処理開始
 # ここから下のメッセージは翻訳可能です
 
-# rm helper
-# Delete the file if it exists.
-# For directories, rm -rf is used.
-# If the file does not exist, skip it.
+# Show message when file is removed
 # remove <file> <file> ...
 remove() {
-    local _list=($(echo "$@")) _file
-    for _file in "${_list[@]}"; do
-        msg_debug "Removing ${_file}"
-        if [[ -f "${_file}" ]]; then    
-            rm -f "${_file}"
-        elif [[ -d "${_file}" ]]; then
-            rm -rf "${_file}"
-        fi
-    done
+    local _file
+    for _file in "${@}"; do msg_debug "Removing ${_file}"; rm -rf "${_file}"; done
 }
 
 usage (){
@@ -721,7 +366,7 @@ usage (){
     elif [[ "${_pacman_help}" = true ]]; then
         "${pacman_command}" -h --${operation}
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
-        _wfa_usage_${operation}
+        eval "_wfa_usage_${operation}"
     else
         msg_error "Help for this operation is not implemented"
         exit 1
@@ -767,14 +412,16 @@ add_args() {
             _args_array=(${makepkg_args})
             _args_array+=(${@})
             makepkg_args=${_args_array[@]}
-            msg_debug "makepkg ARGS: ${makepkg_args}"
+            #msg_debug "makepkg ARGS: ${makepkg_args}"
+            msg_debug "%s ARGS: " "makepkg" ${makepkg_args}
             ;;
 
         "pacman")
             _args_array=(${pacman_args})
             _args_array+=(${@})
             pacman_args=${_args_array[@]}
-            msg_debug "pacman ARGS: ${pacman_args}"
+            #msg_debug "pacman ARGS: ${pacman_args}"
+            msg_debug "%s ARGS: %s" "pacman" "${pacman_args}"
             ;;
         "git")
             _args_array=(${mpg_args})
@@ -1288,7 +935,7 @@ run_operation() {
         msg_warn "This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"
     fi
 
-    operation_${_operation}
+    eval "operation_${_operation}"
 }
 
 # Parse options
