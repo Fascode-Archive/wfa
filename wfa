@@ -73,6 +73,8 @@ declare -A ja_JP=(
     ["This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"]="このプログラムはまだ安定しないアルファ版です\nもしバグを見つけたらGitHub上で共有してください\nhttps://github.com/hayao0819/wfa/issues"
     ["Please make a contract with me and become a Puella Magi !"]="僕と契約して魔法少女になってよ！ "
     ["%s ARGS: %s"]="%s の引数: %s"
+    ["%s %s (+%s) → (+%s)"]="%s %s (+%s) → (+%s)"
+    ["Getting post-voting information ..."]="投票後の情報を取得しています..."
 )
 
 
@@ -207,11 +209,7 @@ msg_debug() { [[ "${debug}" = true ]] && msg_common "$(text -nc magenta "  Debug
 
 # Show an ERROR message then exit with status
 # $1: message string
-# $2: exit code number (with 0 does not exit)
-msg_error() {
-    msg_common "$(text -nc red "  Error")" "${@}"
-    [[ -n "${2:-}" ]] && exit "${2}"
-}
+msg_error() { msg_common "$(text -nc red "  Error")" "${@}"; }
 
 # 使い方
 # text [-b/-c color/-n/-f/-l/]
@@ -859,6 +857,7 @@ operation_vote() {
         _aur_json=$(echo "${_aur_json}" | jq -r "select(.Name == \"${_package}\")")
 
         # jsonから値を取り出して整形
+        msg_info "Searching in AUR ..."
         _pkgver="$(echo "${_aur_json}" | jq -r ".Version" )"
         _before_popularity="$(printf "%g\n" "$(echo "${_aur_json}" | jq -r ".Popularity" )" | awk '{printf("%4.2f", $1)}')"
         _before_vote="$(echo "${_aur_json}" | jq -r ".NumVotes" )"
@@ -873,12 +872,13 @@ operation_vote() {
         fi
 
         # 投票後の値を取得
-        _aur_json=$(get_aur_json | jq -r "select(.Name == \"${_package}\")")
+        msg_info "Getting post-voting information ..."
+        _aur_json=$(get_aur_json "${_package}" | jq -r "select(.Name == \"${_package}\")")
         _after_popularity="$(printf "%g\n" "$(echo "${_aur_json}" | jq -r ".Popularity" )" | awk '{printf("%4.2f", $1)}')"
         _after_vote="$(echo "${_aur_json}" | jq -r ".NumVotes" )"
 
         # 結果を出力
-        msg_info "%s %s (+%s) → (+%s)" "$(text -b "${_package}")" "$(text -c cyan "${_pkgver}")" "$(text -b "${_before_vote} ${_before_popularity}")" "$(text -b "${_after_vote} ${_after_popularity}")"
+        msg_info "%s %s (+%s) → (+%s)" "$(text -nb "${_package}")" "$(text -nc cyan "${_pkgver}")" "$(text -nb "${_before_vote} ${_before_popularity}")" "$(text -nb "${_after_vote} ${_after_popularity}")"
     done
 }
 
