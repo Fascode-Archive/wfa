@@ -374,7 +374,7 @@ set_operation() {
     fi
 }
 
-run_sudo() { (( ${UID} == 0 )) && eval "${@}" || eval "sudo ${@}"; return 0; }
+run_sudo() { (( ${UID} == 0 )) && eval "${@}" || eval "sudo" "${@}"; return 0; }
 
 run_pacman() { run_sudo "${pacman_command}" "${@}"; }
 
