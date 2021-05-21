@@ -383,28 +383,17 @@ set_operation() {
     fi
 }
 
-run_sudo() {
-    if (( ${UID} == 0 )); then
-        ${@}
-    else
-        sudo ${@}
-    fi
-}
+run_sudo() { (( ${UID} == 0 )) && eval "${@}" || eval "sudo ${@}"; return 0; }
 
-run_pacman() {
-    run_sudo "${pacman_command}" ${@}
-}
+run_pacman() { run_sudo "${pacman_command}" "${@}"; }
 
-wfa() {
-    "${wfa_path}" ${@}
-}
+wfa() { "${wfa_path}" "${@}"; }
 
 # pacmanの引数を追加する
 # https://github.com/FascodeNet/aptpac/blob/master/aptpac のADD_OPTION関数を参考
 # Usage: add_args [pacman/makepkg/git/gpg/sudo/curl] <args1> <args2>...
 add_args() {
-    local _target="${1}"
-    local _args_array
+    local _target="${1}" _args_array
     shift 1
 
     case "${_target}" in
@@ -457,36 +446,16 @@ add_args() {
 
 # 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
 check_aur_package() {
-    local _package="${1}"
     # 参考: https://qiita.com/Hayao0819/items/a8740a17301fafa2fdab
-    if [[ -z "$(pacman -Ssq "${_package}" 2>/dev/null | grep -o ".*${_package}$")" ]]; then
-        #AUR以外のリポジトリに存在しない
-        return 0
-    else
-        return 1
-    fi
+    pacman -Ssq "${1}" 2>/dev/null | grep -o ".*${1}$" 1> /dev/null 2>&1 && return 0 || return 1;
 }
 
 
 # 引数で指定されたパッケージが既にインストールされている場合は正常終了します。
-check_installed_package() {
-    local _package="${1}"
-    if "${pacman_command}" -Qq "${_package}" > /dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
-}
+check_installed_package() { "${pacman_command}" -Qq "${1}" > /dev/null 2>&1 && return 0 || return 1; }
 
-# 引数で渡されたオペレーションが指定されている場合のみ正常終了します。
-check_operation() {
-    local _operation="${1}"
-    if [[ "${_operation}" = "${operation}" ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# この関数に渡されたオペレーションが実行中の場合のみ正常終了します。
+check_operation() { [[ "${1}" = "${operation}" ]] && return 0 || return 1; }
 
 # ~/.cacheに相当するディレクトリを返します
 get_cache_dir() {
@@ -950,8 +919,8 @@ unset _opt_short _opt_long
 eval set -- "${OPT}"
 msg_debug "Argument: ${OPT}"
 
-while :; do
-    case ${1} in
+while true; do
+    case "${1}" in
         -A | --vote)
             set_operation "vote"
             shift 1
@@ -984,8 +953,8 @@ done
 
 eval set -- "${OPT}"
 
-while :; do
-    case ${1} in
+while true; do
+    case "${1}" in
         -a | --aur)
             force_aur=true
             msg_debug "Assume targets are from the AUR"
@@ -1267,7 +1236,7 @@ while :; do
     esac
 done
 
-specified_packages=(${@})
+specified_packages=("${@}")
 
 # Run database update
 if (( "${option_y_count}" == 1 )); then
