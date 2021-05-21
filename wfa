@@ -158,16 +158,10 @@ curl_args=""
 # ここからメッセージ関連の関数定義
 # テキストの翻訳
 translate() {
-    local _get_text
-    local _locale="$(echo "${LANG}" | cut -d "." -f 1)"
-
+    local _get_text _locale="$(echo "${LANG}" | cut -d "." -f 1)"
     _get_text() {
-        set +eu
-        if [[ -z "${*}" ]]; then
-            return 1
-        fi
-        local _translated_text="$(eval echo '$'{${_locale}[\"${*}\"]})"
-        set -eu
+        [[ -z "${*+SET}" ]] && return 1
+        local _translated_text="$(set +eu ; eval echo '$'{${_locale}[\"${*}\"]} ; set -eu)"
         if [[ -z "${_translated_text}" ]]; then
             if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
                 echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
