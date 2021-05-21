@@ -68,7 +68,6 @@ declare -A ja_JP=(
     ["Help for this operation is not implemented"]="このオペレーションのヘルプは実装されていません"
     ["(Orphaned)"]="(メンテナ不在)"
     ["[Installed]"]="[インストール済み]"
-    ["This is a feature that has not been implemented yet"]="まだ実装されていない機能です"
     ["Operation: %s"]="オペレーション: %s"
     ["Raw popularity: %s"]="人気度の正確な値: %s"
     ["This program is an alpha version that is not yet stable\nIf you find a bug, please share it on GitHub\nhttps://github.com/hayao0819/wfa/issues"]="このプログラムはまだ安定しないアルファ版です\nもしバグを見つけたらGitHub上で共有してください\nhttps://github.com/hayao0819/wfa/issues"
