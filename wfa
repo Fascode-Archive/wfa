@@ -1152,6 +1152,7 @@ while true; do
                     add_args pacman "--color auto"
                     ;;
             esac
+            shift 2
             ;;
         --nocolor)
             nocolor=true
