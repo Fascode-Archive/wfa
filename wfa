@@ -373,7 +373,7 @@ usage (){
 set_operation() {
     if [[ "${operation}" = "none" ]]; then
         operation="${1}"
-        add_args pacman "--${operation}"
+        #add_args pacman "--${operation}"
     else
         msg_error "only one operation may be used at a time"
         exit 1
@@ -760,7 +760,7 @@ operation_remove() {
     if [[ "${_not_found}" = true ]]; then
         exit 1
     else
-        run_pacman "${pacman_args[@]}" "${specified_packages[@]}"
+        run_pacman -R "${pacman_args[@]}" "${specified_packages[@]}"
     fi
 }
 
@@ -781,7 +781,7 @@ install_package() {
     done
 
     if (( "${#_repo_packages[@]}" > 0 )); then
-        run_pacman --asdeps "${pacman_args[@]}" "${_repo_packages[@]}"
+        run_pacman --asdeps -S "${pacman_args[@]}" "${_repo_packages[@]}"
     fi
 
     if (( "${#_aur_packages[@]}" > 0 )); then
@@ -801,7 +801,7 @@ operation_sync(){
     local _package
     if (( "${sync_clean_count}" >= 1 )); then
         remove "$(get_cache_dir)/wfa"
-        run_pacman "${pacman_args[@]}" "-$(yes "c" | head -n "${sync_clean_count}")"
+        run_pacman -S "${pacman_args[@]}" "-$(yes "c" | head -n "${sync_clean_count}")"
     fi
 
 
@@ -813,12 +813,12 @@ operation_sync(){
     else
         if [[ "${sync_upgrade}" = true ]]; then
             upgrade_aur_package
-            run_pacman "${pacman_args[@]}" --sysupgrade
+            run_pacman -S "${pacman_args[@]}" --sysupgrade
         fi
         for _package in "${specified_packages[@]}"; do
             if check_repo_package "${_package}" && [[ "${force_aur}" = false ]]; then
                 # 公式パッケージなのでpacmanでそのままインストール
-                run_pacman "${pacman_args[@]}" "${_package}"
+                run_pacman -S "${pacman_args[@]}" "${_package}"
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
