@@ -1221,9 +1221,9 @@ specified_packages=("${@}")
 
 # Run database update
 if (( "${option_y_count}" == 1 )); then
-    run_pacman -Sy
+    run_pacman "${pacman_args[@]}" -Sy
 elif (( "${option_y_count}" >= 2 )); then
-    run_pacman -Syy
+    run_pacman "${pacman_args[@]}" -Syy
 fi
 
 # set_operationで設定された操作を実行
