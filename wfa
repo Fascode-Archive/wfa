@@ -160,10 +160,12 @@ curl_args=""
 # ここからメッセージ関連の関数定義
 # テキストの翻訳
 translate() {
-    local _get_text _locale="$(echo "${LANG}" | cut -d "." -f 1)"
+    local _get_text _locale _translated_text
+    _locale="$(echo "${LANG}" | cut -d "." -f 1)"
     _get_text() {
         [[ -z "${*+SET}" ]] && return 1
-        local _translated_text="$(set +eu ; eval echo '$'{${_locale}[\"${*}\"]} ; set -eu)"
+        #_translated_text="$(set +eu ; eval echo '$'{${_locale}[\"${*}\"]} ; set -eu)"
+        _translated_text="$(eval "echo \${${_locale}[\"${*}\"]}")"
         if [[ -z "${_translated_text}" ]]; then
             if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
                 echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
@@ -180,19 +182,20 @@ translate() {
         _main="${1}"
     fi
     shift 1
-    echo "$(printf "${_main}" "${@}")"
+    #echo "$(printf "${_main}" "${@}")"
+    echo "${_main}"
 }
 
 msg_common(){
-    local _msg_opts=() _count
+    local _msg_opts=() _count _message
     [[ "${1}" = "-n" ]] && _msg_opts+=("-n") && shift 1
-    [[ "${msgdebug}" = true ]] && set -xv || set +xv
+    [[ "${msgdebug}" = true ]] || set +xv && set -xv
     local _label="${1}" && shift 1
-    local _message="$(text "${@}")"
+    _message="$(text "${@}")"
     for _count in $(seq "1" "$(echo -ne "${_message}\n" | wc -l)"); do
         echo "$(text -nc cyan "[WFA]") ${_label} $(echo -ne "${_message}\n" | head -n "${_count}" | tail -n 1 )"
     done
-    [[ "${bash_debug}" = true ]] && set -xv || set +xv
+    [[ "${bash_debug}" = true ]] || set +xv && set -xv 
 }
 
 # Show an INFO message
@@ -234,10 +237,11 @@ text() {
             f) _decotypes="${_decotypes};5" ;;
             l) _decotypes="${_decotypes};4" ;;
             n) _notranslate=true            ;;
+            *) : ;;
         esac
     done
     shift "$((OPTIND - 1))"
-    [[ "${_notranslate}" = false ]] && _message="$(translate "${@}")" || _message="${@}"
+    [[ "${_notranslate}" = false ]] && _message="$(translate "${@}")" || _message="${*}"
     if [[ "${nocolor}" = true ]]; then
         echo -ne "${@}"
     else
@@ -372,7 +376,7 @@ set_operation() {
     fi
 }
 
-run_sudo() { (( ${UID} == 0 )) && eval "${@}" || eval "sudo" "${@}"; return 0; }
+run_sudo() { (( UID == 0 )) || eval "sudo" "${@}"; return 0 && eval "${@}"; }
 
 run_pacman() { run_sudo "${pacman_command}" "${@}"; }
 
@@ -386,51 +390,20 @@ add_args() {
     shift 1
 
     case "${_target}" in
-        "makepkg")
-            _args_array=(${makepkg_args})
-            _args_array+=(${@})
-            makepkg_args=${_args_array[@]}
-            #msg_debug "makepkg ARGS: ${makepkg_args}"
-            msg_debug "%s ARGS: " "makepkg" ${makepkg_args}
-            ;;
-
-        "pacman")
-            _args_array=(${pacman_args})
-            _args_array+=(${@})
-            pacman_args=${_args_array[@]}
-            #msg_debug "pacman ARGS: ${pacman_args}"
-            msg_debug "%s ARGS: %s" "pacman" "${pacman_args}"
-            ;;
-        "git")
-            _args_array=(${mpg_args})
-            _args_array+=(${@})
-            git_args=${_args_array[@]}
-            msg_debug "git ARGS: ${git_args}"
-            ;;
-        "gpg")
-            _args_array=(${gpg_args})
-            _args_array+=(${@})
-            gpg_args=${_args_array[@]}
-            msg_debug "gpg ARGS: ${gpg_args}"
-            ;;
-        "sudo")
-            _args_array=(${sudo_args})
-            _args_array+=(${@})
-            sudo_args=${_args_array[@]}
-            msg_debug "sudo ARGS: ${sudo_args}"
-            ;;
-        "curl")
-            _args_array=(${curl_args})
-            _args_array+="${@}"
-            curl_args=${_args_array[@]}
-            msg_debug "curl ARGS: ${curl_args}"
-            ;;
-        *)
+        "makepkg") makepkg_args+=("${@}") ;;
+        "pacman" ) pacman_args+=("${@}")  ;;
+        "git"    ) git_args=("${@}")      ;;
+        "gpg"    ) gpg_args=("${@}")      ;;
+        "sudo"   ) sudo_args=("${@}")     ;;
+        "curl"   ) curl_args=("${@}")     ;;
+        *        )
             msg_error "Failed to set the argument of %s" "${_target}"
             msg_error "Setting that command is not currently supported"
             exit 1
             ;;
     esac
+
+    msg_debug "%s ARGS: %s" "${_target}" "${*}"
 }
 
 # 引数で指定されたパッケージがAUR以外の場所に存在しない場合にのみ正常終了します(AURのパッケージの場合に正常終了)
@@ -468,11 +441,11 @@ get_cache_dir() {
 # Usage: get_srcinfo_data <path> <var>
 # 参考: https://qiita.com/withelmo/items/b0e1ffba639dd3ae18c0
 get_srcinfo_data() {
-    local _srcinfo="${1}" _ver="${2}"
-    local _srcinfo_json=$(python << EOF
+    local _srcinfo="${1}" _ver="${2}" _srcinfo_json
+    _srcinfo_json=$(python << EOF
 from srcinfo.parse import parse_srcinfo; import json
 text = """
-$(cat ${1})
+$(cat "${1}")
 """
 parsed, errors = parse_srcinfo(text)
 print(json.dumps(parsed))
@@ -482,8 +455,9 @@ EOF
 }
 
 get_aur_json() {
+    local _aur_json
     local _package="${1}"
-    local _aur_json=$("${curl_command}" ${curl_args} -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name&arg=${_package}" | jq -r)
+    _aur_json=$("${curl_command}" "${curl_args[@]}" -sL "https://aur.archlinux.org/rpc/?v=5&type=search&by=name&arg=${_package}" | jq -r)
     if (( "$(echo "${_aur_json}" | jq -r ".resultcount")" != 0 )); then
         echo "${_aur_json}" | jq -r ".results[]"
     fi
@@ -493,7 +467,7 @@ get_aur_json() {
 # AURからパッケージをビルドしてインストールします
 # 現在1つのパッケージしか指定できません
 install_aur_package() {
-    local _package="${1}"
+    local _package="${1}" _found_packages _aur_json _aur_snapshot_url _aur_version _aur_packagebase
 
     # Create cache dir
     if [[ ! -v wfa_cache_dir ]]; then
@@ -504,15 +478,15 @@ install_aur_package() {
 
     # AurJsonから値を取得
     msg_info "Searching in AUR ..."
-    local _aur_json="$(get_aur_json "${_package}")"
+    _aur_json="$(get_aur_json "${_package}")"
     if [[ -z "${_aur_json}" ]]; then
         msg_error "Could not find all required packages: %s" "${_package}"
         exit 1
     fi
-    local _found_packages="$(echo "${_aur_json}" | jq -r --tab '.Name')"
+    _found_packages="$(echo "${_aur_json}" | jq -r --tab '.Name')"
     #msg_debug "Found package: $(echo ${_found_packages} | tr '\n' ' ')"
 
-    if [[ -n "$(echo "${_found_packages}" | grep -x "${_package}" )" ]]; then
+    if grep -qx "${_package}" <<< "${_found_packages}" ; then
         msg_debug "Select a package %s with an exact name match" "${_package}"
     else
         msg_error "No package with an exact name match was found"
@@ -522,9 +496,9 @@ install_aur_package() {
     # PKGBUILDをダウンロード
     msg_info "Download PKGBUILD of %s" "${_package}"
     _aur_json=$(echo "${_aur_json}" | jq -r "select(.Name == \"${_package}\")" )
-    local _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
-    local _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
-    local _aur_packagebase="$(echo "${_aur_json}" | jq -r ".PackageBase")"
+    _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
+    _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
+    _aur_packagebase="$(echo "${_aur_json}" | jq -r ".PackageBase")"
     msg_debug "Get PKGBUILD from %s" "${_aur_snapshot_url}"
 
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
@@ -537,7 +511,7 @@ install_aur_package() {
             echo
             _yes_or_no="No"
         else
-            read _yes_or_no
+            read -r _yes_or_no
         fi
         case "${_yes_or_no}" in
             "y" | "Y" | "yes" | "Yes" | "YES" ) _download_pkgbuild=true  ;;
@@ -546,7 +520,7 @@ install_aur_package() {
     fi
     if [[ "${_download_pkgbuild}" = true ]]; then
         remove "${_pkgbuild_archive_path}"
-        "${curl_command}"  ${curl_args} -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
+        "${curl_command}" "${curl_args[@]}" -L -C - -f -o "${_pkgbuild_archive_path}" "${_aur_snapshot_url}"
     fi
 
     # PKGBUILDを展開
@@ -563,9 +537,10 @@ install_aur_package() {
         )
     fi
 
-    local _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".makedepends[]?")"
-    local _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".depends[]?")"
-    local _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".conflicts[]?")"
+    local _makedepends _depends _conflicts
+    _makedepends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".makedepends[]?")"
+    _depends="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".depends[]?")"
+    _conflicts="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".conflicts[]?")"
     msg_debug "makedepends: %s" "${_makedepends}"
     msg_debug "depends: %s" "${_depends}"
     msg_debug "conflicts: %s " "${_conflicts}"
@@ -573,7 +548,7 @@ install_aur_package() {
 
     # 衝突を確認
     local _pkg _conflicts_found=false
-    for _pkg in ${_conflicts[@]} ${_package}; do
+    for _pkg in "${_conflicts[@]}" ${_package}; do
         if "${pacman_command}" -Qq "${_pkg}" > /dev/null 2>&1 && [[ ! "$("${pacman_command}" -Qq "${_pkg}" 2> /dev/null)" = "${_package}" ]]; then
             _conflicts_found=true
             msg_error "${_package} is colliding with $("${pacman_command}" -Qq "${_pkg}" 2> /dev/null)"
@@ -631,7 +606,7 @@ install_aur_package() {
             echo
             _yes_or_no="No"
         else
-            read _yes_or_no
+            read -r _yes_or_no
         fi
         case "${_yes_or_no}" in
             "y" | "Y" | "yes" | "Yes" | "YES" ) add_args makepkg "--clean" ;;
@@ -643,7 +618,7 @@ install_aur_package() {
     add_args "makepkg" "-sf"
     (
         cd "${_build_dir}"
-        "${makepkg_command}" "${makepkg_args}"
+        "${makepkg_command}" "${makepkg_args[@]}"
     )
 
 
@@ -652,17 +627,18 @@ install_aur_package() {
         cd "${_build_dir}"
         "${makepkg_command}" --printsrcinfo > "${_build_dir}/.SRCINFO"
     )
-    local _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]"))
-    local _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
-    local _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
-    local _arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
+    local _pkgnames _pkgver _pkgrel _arch_array _PKGEXT
+    _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]"))
+    _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
+    _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
+    _arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
     local _arch _pkgname
     if [[ "${_arch_array[*]}" = "any" ]]; then
         _arch="any"
     else
         _arch="${arch}"
     fi
-    local _PKGEXT=$(
+    _PKGEXT=$(
         source "${makepkg_config}"
         echo "${PKGEXT}"
     )
@@ -686,8 +662,8 @@ install_aur_package() {
 
 # AURのパッケージを検索
 search_aur_package() {
-    local _package="${1}"
-    local _aur_json="$(get_aur_json "${_package}")"
+    local _package="${1}" _aur_json
+    _aur_json="$(get_aur_json "${_package}")"
     if [[ -z "${_aur_json}" ]]; then
         msg_error "Could not find all required packages: %s" "${_package}"
         exit 1
@@ -701,10 +677,10 @@ search_aur_package() {
         IFS="${_IFS}"
     else
         local  _found_package __pkgver __popularity __vote __pkgdesc __orphaned __installed __output_text=()
-        for _found_package in ${_found_pkgname[@]}; do
+        for _found_package in "${_found_pkgname[@]}"; do
             __orphaned=false
             __installed=false
-            _found_json="$(echo ${_aur_json} | jq "select(.Name == \"${_found_package}\")")"
+            _found_json="$(echo "${_aur_json}" | jq "select(.Name == \"${_found_package}\")")"
 
             #echo "${_found_json}"
             __pkgver="$(echo "${_found_json}" | jq -r ".Version" )"
@@ -748,16 +724,18 @@ search_aur_package() {
 
 # バージョンを表示して終了
 operation_version() {
+    local _libalpm_version _pacman_version
+
     # Pyalpmからlibalpmの値を取得
     # 参考: https://pyalpm.readthedocs.io/en/latest/pyalpm/pyalpm.html
-    local _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
-    local _pacman_version="$("${pacman_command}" -Q pacman | cut -d ' ' -f 2)"
+    _libalpm_version="$(python3 -c 'import pyalpm; print(pyalpm.alpmversion())')"
+    _pacman_version="$("${pacman_command}" -Q pacman | cut -d ' ' -f 2)"
     echo "wfa v${wfa_version} - pacman v${_pacman_version} - libalpm v${_libalpm_version}"
 }
 
 operation_remove() {
     local _package _not_found=false
-    for _package in ${specified_packages[@]}; do
+    for _package in "${specified_packages[@]}"; do
         if ! check_installed_package "${_package}"; then
             msg_error "target not found: %s" "${_package}"
             _not_found=true
@@ -766,14 +744,14 @@ operation_remove() {
     if [[ "${_not_found}" = true ]]; then
         exit 1
     else
-        run_pacman ${pacman_args} "${specified_packages[@]}"
+        run_pacman "${pacman_args[@]}" "${specified_packages[@]}"
     fi
 }
 
 # Usage: install_package <package1> <package2>...
 install_package() {
     local _package _repo_packages=() _aur_packages=()
-    for _package in ${@}; do
+    for _package in "${@}"; do
         if ! check_installed_package "${_package}"; then
             if check_repo_package "${_package}"; then
                 # 公式パッケージなのでpacmanでそのままインストール
@@ -786,12 +764,12 @@ install_package() {
     done
 
     if (( "${#_repo_packages[@]}" > 0 )); then
-        run_pacman --asdeps ${pacman_args} "${_repo_packages[@]}"
+        run_pacman --asdeps "${pacman_args[@]}" "${_repo_packages[@]}"
     fi
 
     if (( "${#_aur_packages[@]}" > 0 )); then
         unset _package
-        for _package in ${_aur_packages[@]}; do
+        for _package in "${_aur_packages[@]}"; do
             install_aur_package "${_package}"
         done
     fi
@@ -806,29 +784,24 @@ operation_sync(){
     local _package
     if (( "${sync_clean_count}" >= 1 )); then
         remove "$(get_cache_dir)/wfa"
-        run_pacman ${pacman_args} $(
-            local _count
-            for _count in $(seq 1 ${sync_clean_count}); do
-                echo -n "-c "
-            done
-        )
+        run_pacman "${pacman_args[@]}" "-$(yes "c" | head -n "${sync_clean_count}")"
     fi
 
 
     if [[ "${sync_search}" = true ]]; then
-        for _package in ${specified_packages[@]}; do
+        for _package in "${specified_packages[@]}"; do
             search_aur_package "${_package}"
         done
-        "${pacman_command}" ${pacman_args} ${specified_packages[@]} || :
+        "${pacman_command}" "${pacman_args[@]}" "${specified_packages[@]}" || true
     else
         if [[ "${sync_upgrade}" = true ]]; then
             upgrade_aur_package
-            run_pacman ${pacman_args} --sysupgrade
+            run_pacman "${pacman_args[@]}" --sysupgrade
         fi
-        for _package in ${specified_packages[@]}; do
+        for _package in "${specified_packages[@]}"; do
             if check_repo_package "${_package}" && [[ "${force_aur}" = false ]]; then
                 # 公式パッケージなのでpacmanでそのままインストール
-                run_pacman ${pacman_args} "${_package}"
+                run_pacman "${pacman_args[@]}" "${_package}"
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
@@ -850,10 +823,10 @@ operation_vote() {
     fi
 
     local _package _aur_json _found_result_count _pkgver _before_popularity _before_vote
-    for _package in ${specified_packages[@]}; do
+    for _package in "${specified_packages[@]}"; do
 
         # 存在するパッケージか確認
-        local _aur_json="$(get_aur_json "${_package}")"
+        _aur_json="$(get_aur_json "${_package}")"
         if [[ -z "${_aur_json}" ]]; then
             msg_error "Could not find all required packages: %s" "${_package}"
             exit 1
@@ -903,16 +876,15 @@ run_operation() {
 }
 
 # Parse options
-ARGUMENT="${@}"
-_opt_short="AQRShVdb:aysucqn"
-_opt_long="query,remove,sync,help,version,debug,dbpath:,aururl,aur,noconfirm,config:,makepkg:,mflags:,pacman:,git:,gitflags:,gpg:,gpgflags:,makepkgconf:,nomakepkgconf,nodeps,refresh,bash-debug,msg-debug,sysupgrade,color:,nocolor,clean,quiet,arch:,confirm,disable-download-timeout,curl:,curlflags:,unneeded,puella,wfa-debug,cascade,ignoregroup:,ignore:,hookdir:,gpgdir:"
+OPTS=("A" "Q" "R" "S" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n")
+OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:")
+GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+getopt -Q "${GETOPT[@]}" || exit 1
+readarray -t OPT < <(getopt "${GETOPT[@]}")
 
-OPT=$(getopt -o ${_opt_short} -l ${_opt_long} -- ${ARGUMENT})
-[[ ${?} != 0 ]] && exit 1
-unset _opt_short _opt_long
-
-eval set -- "${OPT}"
-msg_debug "Argument: ${OPT}"
+eval set -- "${OPT[@]}"
+msg_debug "Argument: ${OPT[*]}"
+unset OPTS OPTL GETOPT
 
 while true; do
     case "${1}" in
@@ -946,7 +918,7 @@ while true; do
     esac
 done
 
-eval set -- "${OPT}"
+eval set -- "${OPT[@]}"
 
 while true; do
     case "${1}" in
