@@ -673,7 +673,7 @@ install_aur_package() {
 
     # ビルド後に不要なパッケージを削除
     if (( "${#__remove_list[@]}" != 0 )); then
-        wfa -Rsnc --noconfirm "${__remove_list[*]}"
+        run_pacman -R --noconfirm "${__remove_list[*]}"
     fi
 }
 
