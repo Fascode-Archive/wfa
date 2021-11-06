@@ -121,7 +121,7 @@ makepkg_command="/usr/bin/makepkg"
 # 設定ファイル
 makepkg_config="/etc/makepkg.conf"
 # 引数
-makepkg_args=""
+makepkg_args=()
 
 #-- pacman --#
 # 実行ファイル
@@ -129,31 +129,31 @@ pacman_command="/usr/bin/pacman"
 # 設定ファイル
 pacman_config="/etc/pacman.conf"
 # 引数
-pacman_args=""
+pacman_args=()
 
 #-- git --#
 # 実行ファイル
 git_command="/usr/bin/git"
 # 引数
-git_args=""
+git_args=()
 
 #-- gpg --#
 # 実行ファイル
 gpg_command="/usr/bin/gpg"
 # 引数
-gpg_args=""
+gpg_args=()
 
 #-- sudo --#
 # 実行ファイル
 sudo_command="/usr/bin/sudo"
 # 引数
-sudo_args=""
+sudo_args=()
 
 #-- curl --#
 # 実行ファイル
 curl_command="/usr/bin/curl"
 # 引数
-curl_args=""
+curl_args=()
 
 
 ######################################################################################
