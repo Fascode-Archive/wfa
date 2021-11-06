@@ -668,7 +668,8 @@ search_aur_package() {
         msg_error "Could not find all required packages: %s" "${_package}"
         exit 1
     fi
-    local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
+    #local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
+    readarray -t _found_pkgname < <(jq -r ".Name" <<< "${_aur_json}")
 
     if [[ "${quiet}" = true ]]; then
         local _IFS="${IFS}"
