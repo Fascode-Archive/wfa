@@ -98,7 +98,7 @@ option_y_count=0
 sync_clean_count=0
 
 #-- options (str) --#
-arch="$(uname -m)"
+arch=
 aururl="https://aur.archlinux.org/"
 operation="none"
 
@@ -379,6 +379,8 @@ set_operation() {
         exit 1
     fi
 }
+
+_pacman_conf(){ pacman_conf --config="${pacman_config}" "${@}"; }
 
 run_sudo() { (( UID == 0 )) || eval "sudo" "${@}"; return 0 && eval "${@}"; }
 
@@ -1218,6 +1220,9 @@ while true; do
 done
 
 specified_packages=("${@}")
+
+# Get architecture fron pacman.conf
+[[ -z "${arch-""}" ]] && arch="$(_pacman_conf Architecture)"
 
 # Run database update
 if (( "${option_y_count}" == 1 )); then
