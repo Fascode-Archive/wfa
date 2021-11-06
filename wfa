@@ -877,7 +877,7 @@ run_operation() {
 
 # Parse options
 OPTS=("A" "Q" "R" "S" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n")
-OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:")
+OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 getopt -Q "${GETOPT[@]}" || exit 1
 readarray -t OPT < <(getopt "${GETOPT[@]}")
@@ -926,6 +926,10 @@ while true; do
             force_aur=true
             msg_debug "Assume targets are from the AUR"
             shift 1
+            ;;
+        --cachedir)
+            add_args pacman "--cachedir" "${2}"
+            shift 2
             ;;
         --debug)
             debug=true
