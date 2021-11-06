@@ -663,9 +663,11 @@ install_aur_package() {
     _pkgfilelist+=("${_build_dir}/${_package}-${_pkgver}-${_pkgrel}-${_arch}${_PKGEXT}")
 
     # インストール
+    local _installed=()
     for _pkgfile in "${_pkgfilelist[@]}"; do
+        printf "%s\n" "${_installed[@]}" | grep -qx "${_pkgfile}" && continue
         [[ ! -f "${_pkgfile}" ]] && continue
-        run_pacman "${pacman_args[@]}" -U --noconfirm "${_pkgfilelist[@]}"
+        run_pacman "${pacman_args[@]}" -U --noconfirm "${_pkgfile}" && _installed+=("${_pkgfile}")
     done
 
 
