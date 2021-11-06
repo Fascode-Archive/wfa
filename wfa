@@ -165,7 +165,9 @@ translate() {
     _get_text() {
         [[ -z "${*+SET}" ]] && return 1
         #_translated_text="$(set +eu ; eval echo '$'{${_locale}[\"${*}\"]} ; set -eu)"
+        set +u
         _translated_text="$(eval "echo \${${_locale}[\"${*}\"]}")"
+        set -u
         if [[ -z "${_translated_text}" ]]; then
             if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
                 echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
