@@ -1,6 +1,0 @@
-language: shell
-script:
-  - bash -c 'shopt -s globstar nullglob; shellcheck -s bash --exclude=SC2068 -S error ./wfa'
-  - bash -c 'shopt -s globstar nullglob; shellcheck -s bash --exclude=SC2068 -S error **/PKGBUILD'
-git:
-  submodules: false
