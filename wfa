@@ -182,8 +182,10 @@ translate() {
         _main="${1}"
     fi
     shift 1
-    #echo "$(printf "${_main}" "${@}")"
-    echo "${_main}"
+
+    #shellcheck disable=SC2059
+    printf "${_main}\n" "${@}"
+    #echo "${_main}"
 }
 
 msg_common(){
