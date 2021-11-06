@@ -651,16 +651,22 @@ install_aur_package() {
         source "${makepkg_config}"
         echo "${PKGEXT}"
     )
-    local _pkgfilelist=()
     
     #for _pkgname in ${_pkgnames[@]}; do
     #    _pkgfilelist+=("${_build_dir}/${_pkgname}-${_pkgver}-${_pkgrel}-${_arch}${_PKGEXT}")
     #done
 
+    readarray -t _pkgfilelist < <(
+        cd "${_build_dir}"
+        "${makepkg_command}" --packagelist
+    )
     _pkgfilelist+=("${_build_dir}/${_package}-${_pkgver}-${_pkgrel}-${_arch}${_PKGEXT}")
 
     # インストール
-    run_pacman -U --noconfirm "${_pkgfilelist[@]}"
+    for _pkgfile in "${_pkgfilelist[@]}"; do
+        [[ ! -f "${_pkgfile}" ]] && continue
+        run_pacman "${pacman_args[@]}" -U --noconfirm "${_pkgfilelist[@]}"
+    done
 
 
     # ビルド後に不要なパッケージを削除
