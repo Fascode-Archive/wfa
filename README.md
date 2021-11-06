@@ -3,8 +3,8 @@
 <p>wfa is an AUR helper written in Bash that is being developed to replace yaourt.</p>
 
 <p>
-    <a href="https://travis-ci.com/github/Hayao0819/wfa/">
-        <img src="https://img.shields.io/travis/com/Hayao0819/wfa/master?style=flat-square">
+    <a href="https://github.com/Hayao0819/wfa/actions">
+        <img src="https://img.shields.io/github/workflow/status/hayao0819/wfa/ShellCheck%20CL/master?style=flat-square">
     </a>
     <a href="https://github.com/Hayao0819/wfa/blob/master/LICENSE">
         <img src="https://img.shields.io/github/license/Hayao0819/wfa?style=flat-square">
