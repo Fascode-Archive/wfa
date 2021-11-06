@@ -380,7 +380,7 @@ set_operation() {
     fi
 }
 
-_pacman_conf(){ pacman_conf --config="${pacman_config}" "${@}"; }
+_pacman_conf(){ pacman-conf --config="${pacman_config}" "${@}"; }
 
 run_sudo() { (( UID == 0 )) || eval "sudo" "${@}"; return 0 && eval "${@}"; }
 
