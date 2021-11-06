@@ -189,13 +189,13 @@ translate() {
 msg_common(){
     local _msg_opts=() _count _message
     [[ "${1}" = "-n" ]] && _msg_opts+=("-n") && shift 1
-    [[ "${msgdebug}" = true ]] || set +xv && set -xv
+    if [[ "${msgdebug}" = true ]];then set -xv else set +xv; fi
     local _label="${1}" && shift 1
     _message="$(text "${@}")"
     for _count in $(seq "1" "$(echo -ne "${_message}\n" | wc -l)"); do
         echo "$(text -nc cyan "[WFA]") ${_label} $(echo -ne "${_message}\n" | head -n "${_count}" | tail -n 1 )"
     done
-    [[ "${bash_debug}" = true ]] || set +xv && set -xv 
+    if [[ "${bash_debug}" = true ]];then set -xv else set +xv; fi
 }
 
 # Show an INFO message
