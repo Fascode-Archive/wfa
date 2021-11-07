@@ -114,6 +114,7 @@ nomakepkgconf=false
 sync_search=false
 sync_upgrade=false
 quiet=false
+pass_to_pacman=false
 
 #-- makepkg --#
 # 実行ファイル
@@ -358,60 +359,6 @@ usage (){
         echo "      --noconfirm      do not ask for any confirmation"
     }
 
-    local _wfa_usage_database
-    _wfa_usage_database() {
-        echo "usage:  pacman {-D --database} <options> <package(s)>"
-        echo "options:"
-        echo "  -b, --dbpath <path>  set an alternate database location"
-        echo "  -k, --check          test local database for validity (-kk for sync databases)"
-        echo "  -q, --quiet          suppress output of success messages"
-        echo "  -r, --root <path>    set an alternate installation root"
-        echo "  -v, --verbose        be verbose"
-        echo "      --arch <arch>    set an alternate architecture"
-        echo "      --asdeps         mark packages as non-explicitly installed"
-        echo "      --asexplicit     mark packages as explicitly installed"
-        echo "      --cachedir <dir> set an alternate package cache location"
-        echo "      --color <when>   colorize the output"
-        echo "      --config <path>  set an alternate configuration file"
-        echo "      --confirm        always ask for confirmation"
-        echo "      --debug          display debug messages"
-        echo "      --disable-download-timeout"
-        echo "                       use relaxed timeouts for download"
-        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
-        echo "      --hookdir <dir>  set an alternate hook location"
-        #echo "      --logfile <path> set an alternate log file"
-        echo "      --noconfirm      do not ask for any confirmation"
-        #echo "      --sysroot        operate on a mounted guest system (root-only)"
-    }
-
-    local _wfa_usage_files
-    _wfa_usage_files(){
-        echo "usage:  pacman {-F --files} [options] [file(s)]"
-        echo "options:"
-        echo "  -b, --dbpath <path>  set an alternate database location"
-        echo "  -l, --list           list the files owned by the queried package"
-        echo "  -q, --quiet          show less information for query and search"
-        echo "  -r, --root <path>    set an alternate installation root"
-        echo "  -v, --verbose        be verbose"
-        echo "  -x, --regex          enable searching using regular expressions"
-        echo "  -y, --refresh        download fresh package databases from the server"
-        echo "                       (-yy to force a refresh even if up to date)"
-        echo "      --arch <arch>    set an alternate architecture"
-        echo "      --cachedir <dir> set an alternate package cache location"
-        echo "      --color <when>   colorize the output"
-        echo "      --config <path>  set an alternate configuration file"
-        echo "      --confirm        always ask for confirmation"
-        echo "      --debug          display debug messages"
-        echo "      --disable-download-timeout"
-        echo "                       use relaxed timeouts for download"
-        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
-        echo "      --hookdir <dir>  set an alternate hook location"
-        echo "      --logfile <path> set an alternate log file"
-        echo "      --machinereadable"
-        echo "                       produce machine-readable output"
-        echo "      --noconfirm      do not ask for any confirmation"
-        #echo "      --sysroot        operate on a mounted guest system (root-only)"
-    }
 
     local _wfa_usage_version
     _wfa_usage_version(){ _wfa_usage; }
@@ -423,8 +370,15 @@ usage (){
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         eval "_wfa_usage_${operation}"
     else
-        msg_error "Help for this operation is not implemented"
-        exit 1
+        case "${operation}" in
+            database | deptest | upgrade | files)
+                "${pacman_command}" -h "--${operation}"
+                ;;
+            *)
+                msg_error "Help for this operation is not implemented"
+                exit 1
+                ;;
+        esac
     fi
 }
 
@@ -432,6 +386,8 @@ set_operation() {
     if [[ "${operation}" = "none" ]]; then
         operation="${1}"
         #add_args pacman "--${operation}"
+    elif [[ "${operation}" = "${1}" ]]; then
+        return 0
     else
         msg_error "only one operation may be used at a time"
         exit 1
@@ -953,14 +909,15 @@ run_operation() {
 }
 
 # Parse options
-OPTS=("A" "Q" "R" "S" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
+OPTS=("A" "D" "F" "Q" "R" "S" "T" "U" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
 OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 getopt -Q "${GETOPT[@]}" || exit 1
-readarray -t OPT < <(getopt "${GETOPT[@]}")
+readarray -t PARSED_ARGS < <(getopt "${GETOPT[@]}")
+RAW_ARGS=("${@}")
 
-eval set -- "${OPT[@]}"
-msg_debug "Argument: ${OPT[*]}"
+eval set -- "${PARSED_ARGS[@]}"
+msg_debug "Argument: ${PARSED_ARGS[*]}"
 unset OPTS OPTL GETOPT
 
 while true; do
@@ -987,17 +944,26 @@ while true; do
             ;;
         
         #-- AUR用の処理は何も実装されていません --#
+        #全ての解析された引数は無視され生の引数がそのままpacmanに渡されます
         -D | --database)
+            pass_to_pacman=true
             set_operation "database"
+            shift 1
             ;;
         -T | --deptest)
+            pass_to_pacman=true
             set_operation "deptest"
+            shift 1
             ;;
         -U | --upgrade)
+            pass_to_pacman=true
             set_operation "upgrade"
+            shift 1
             ;;
         -F | --files)
+            pass_to_pacman=true
             set_operation "files"
+            shift 1
             ;;
         --)
             shift
@@ -1009,7 +975,7 @@ while true; do
     esac
 done
 
-eval set -- "${OPT[@]}"
+eval set -- "${PARSED_ARGS[@]}"
 
 while true; do
     case "${1}" in
@@ -1149,6 +1115,7 @@ while true; do
             ;;
         -k | --check)
             add_args pacman "--check"
+            shift 1
             ;;
         -q | --quiet)
             quiet=true
@@ -1330,6 +1297,9 @@ fi
 case "${operation}" in
     "version" | "sync" | "remove" | "vote")
         run_operation "${operation}"
+        ;;
+    "database" | "deptest" | "upgrade" | "files")
+        run_pacman "${RAW_ARGS[@]}"
         ;;
     "none")
         exit 0
