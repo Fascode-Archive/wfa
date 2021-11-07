@@ -116,6 +116,7 @@ sync_search=false
 sync_upgrade=false
 quiet=false
 pass_to_pacman=false
+needed=false
 
 #-- ask options (bool) --#
 cleanbuild=none
@@ -407,7 +408,7 @@ _pacman_conf(){ pacman-conf --config="${pacman_config}" "${@}"; }
 
 run_sudo() { (( UID == 0 )) || eval "sudo" "${@}"; return 0 && eval "${@}"; }
 
-run_pacman() { run_sudo "${pacman_command}" "${@}"; }
+run_pacman() { run_sudo "${pacman_command}" --config "${pacman_config}"  "${@}"; }
 
 wfa() { "${wfa_path}" "${@}"; }
 
@@ -523,12 +524,23 @@ install_aur_package() {
         exit 1
     fi
 
-    # PKGBUILDをダウンロード
-    msg_info "Download PKGBUILD of %s" "${_package}"
+    # JSONからから取得した値を変数に代入
     _aur_json=$(echo "${_aur_json}" | jq -r "select(.Name == \"${_package}\")" )
     _aur_snapshot_url="${aururl%/}$(echo "${_aur_json}" | jq -r ".URLPath")"
     _aur_version="$(echo "${_aur_json}" | jq -r ".Version")"
     _aur_packagebase="$(echo "${_aur_json}" | jq -r ".PackageBase")"
+
+    # --neededの処理
+    if [[ "${needed}" = true ]]; then
+        if run_pacman -Qq "${_package}" 2> /dev/null 1>&2 && \
+            [[ "$(run_pacman -Q "${_package}" | cut -d " " -f 2 )" = "${_aur_version}" ]] ;then
+            msg_info "%s is up to date -- skipping" "$(run_pacman -Q "${_package}" | tr " " "-")"
+            return 0
+        fi
+    fi
+
+    # PKGBUILDをダウンロード
+    msg_info "Download PKGBUILD of %s" "${_package}"
     msg_debug "Get PKGBUILD from %s" "${_aur_snapshot_url}"
 
     local _pkgbuild_archive_path="${wfa_cache_dir}/archive/${_package}-${_aur_version}"
@@ -928,7 +940,7 @@ run_operation() {
 
 # Parse options
 OPTS=("A" "D" "F" "Q" "R" "S" "T" "U" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
-OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit")
+OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit" "needed")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 getopt -Q "${GETOPT[@]}" || exit 1
 readarray -t PARSED_ARGS < <(getopt "${GETOPT[@]}")
@@ -1183,6 +1195,11 @@ while true; do
             #makepkg_args="${2}"
             add_args makepkg "${2}"
             shift 2
+            ;;
+        --needed)
+            add_args pacman "--needed"
+            needed=true
+            shift 1
             ;;
         --pacman)
             pacman_command="${2}"
