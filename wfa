@@ -196,33 +196,37 @@ translate() {
     #echo "${_main}"
 }
 
+# msg_common [-n] <label color> <label> <str1> <str2> ...
 msg_common(){
-    local _msg_opts=() _count _message
+    [[ "${msgdebug}" = true  ]] && set -xv
+    [[ "${msgdebug}" = false ]] && set +xv
+    local _msg_opts=("-e") _count _message _label
+    _label="$(text -nc "${1}" "${2}")" && shift 2
     [[ "${1}" = "-n" ]] && _msg_opts+=("-n") && shift 1
-    if [[ "${msgdebug}" = true ]];then set -xv else set +xv; fi
-    local _label="${1}" && shift 1
     _message="$(text "${@}")"
     for _count in $(seq "1" "$(echo -ne "${_message}\n" | wc -l)"); do
-        echo "$(text -nc cyan "[WFA]") ${_label} $(echo -ne "${_message}\n" | head -n "${_count}" | tail -n 1 )"
+        echo "${_msg_opts[@]}" "$(text -nc cyan "[WFA]") ${_label} $(echo -e "${_message}" | head -n "${_count}" | tail -n 1 )"
     done
-    if [[ "${bash_debug}" = true ]];then set -xv else set +xv; fi
+    [[ "${bash_debug}" = true  ]] && set -xv
+    [[ "${bash_debug}" = false ]] && set +xv
+    return 0
 }
 
 # Show an INFO message
 # $1: message string
-msg_info() { msg_common "$(text -nc green "   Info")" "${@}"; }
+msg_info() { msg_common green "   Info" "${@}"; }
 
 # Show an Warning message
 # $1: message string
-msg_warn() { msg_common "$(text -nc yellow "Warning")" "${@}"; }
+msg_warn() { msg_common yellow "Warning" "${@}"; }
 
 # Show an debug message
 # $1: message string
-msg_debug() { [[ "${debug}" = true ]] && msg_common "$(text -nc magenta "  Debug")" "${@}"; return 0;}
+msg_debug() { [[ "${debug}" = true ]] && msg_common magenta "  Debug" "${@}"; return 0;}
 
 # Show an ERROR message then exit with status
 # $1: message string
-msg_error() { msg_common "$(text -nc red "  Error")" "${@}"; }
+msg_error() { msg_common red "  Error" "${@}"; }
 
 # 使い方
 # text [-b/-c color/-n/-f/-l/]
