@@ -1302,7 +1302,8 @@ case "${operation}" in
         run_pacman "${RAW_ARGS[@]}"
         ;;
     "none")
-        exit 0
+        msg_error "no operation specified (use -h for help)"
+        exit 1
         ;;
     *)
         msg_error "Undefined operation"
