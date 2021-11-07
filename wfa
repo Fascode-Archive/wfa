@@ -117,6 +117,10 @@ sync_upgrade=false
 quiet=false
 pass_to_pacman=false
 
+#-- ask options (bool) --#
+cleanBuild=none
+redownload=none
+
 #-- makepkg --#
 # 実行ファイル
 makepkg_command="/usr/bin/makepkg" 
@@ -529,15 +533,17 @@ install_aur_package() {
         msg_warn "PKGBUILD has already been downloaded"
         msg_warn -n "Do you want to overwrite and download? [n] :"
         local _yes_or_no
-        if [[ "${noconfirm}" = true ]]; then
+        if [[ "${redownload}" = "true" ]] || [[ "${redownload}" = "false" ]]; then
+            _download_pkgbuild="${redownload}"
+        elif [[ "${noconfirm}" = true ]]; then
             echo
             _yes_or_no="No"
         else
             read -r _yes_or_no
         fi
         case "${_yes_or_no}" in
-            "y" | "Y" | "yes" | "Yes" | "YES" ) _download_pkgbuild=true  ;;
-            *                                 ) _download_pkgbuild=false ;;
+            "y" | "Y" | "yes" | "Yes" | "YES" ) redownload=true  ;;
+            *                                 ) redownload=false ;;
         esac
     fi
     if [[ "${_download_pkgbuild}" = true ]]; then
@@ -626,15 +632,18 @@ install_aur_package() {
         msg_info -n "Packages to cleanBuild? [n] :"
         local _yes_or_no
         unset _yes_or_no
-        if [[ "${noconfirm}" = true ]]; then
+        if [[ "${cleanbuild}" = "true" ]] || [[ "${cleanbuild}" = "false" ]]; then
+            :
+        elif [[ "${noconfirm}" = true ]]; then
             echo
             _yes_or_no="No"
         else
             read -r _yes_or_no
         fi
         case "${_yes_or_no}" in
-            "y" | "Y" | "yes" | "Yes" | "YES" ) add_args makepkg "--clean" ;;
+            "y" | "Y" | "yes" | "Yes" | "YES" )  cleanbuild=true;;
         esac
+        [[ "${cleanbuild}" = true ]] && add_args makepkg "--clean"
     fi
 
 
@@ -652,10 +661,14 @@ install_aur_package() {
         "${makepkg_command}" --printsrcinfo > "${_build_dir}/.SRCINFO"
     )
     local _pkgnames _pkgver _pkgrel _arch_array _PKGEXT
-    _pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]"))
     _pkgver="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgver" | sed 's/ //g')"
     _pkgrel="$(get_srcinfo_data "${_build_dir}/.SRCINFO" ".pkgrel" | sed 's/ //g')"
-    _arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
+
+    #_pkgnames=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]"))
+    readarray -t _pkgnames < <(get_srcinfo_data "${_build_dir}/.SRCINFO" ".packages | keys[]")
+    #_arch_array=($(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]"))
+    readarray -t _arch_array < <(get_srcinfo_data "${_build_dir}/.SRCINFO" ".arch[]")
+
     local _arch _pkgname
     if [[ "${_arch_array[*]}" = "any" ]]; then
         _arch="any"
