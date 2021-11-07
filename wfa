@@ -118,7 +118,7 @@ quiet=false
 pass_to_pacman=false
 
 #-- ask options (bool) --#
-cleanBuild=none
+cleanbuild=none
 redownload=none
 
 #-- makepkg --#
