@@ -75,6 +75,7 @@ declare -A ja_JP=(
     ["%s ARGS: %s"]="%s の引数: %s"
     ["%s %s (+%s) → (+%s)"]="%s %s (+%s) → (+%s)"
     ["Getting post-voting information ..."]="投票後の情報を取得しています..."
+    ["no operation specified (use -h for help)"]="オペレーションが指定されていません (-h を使ってヘルプを見て下さい)"
 )
 
 
@@ -170,7 +171,7 @@ translate() {
         _translated_text="$(eval "echo \${${_locale}[\"${*}\"]}")"
         set -u
         if [[ -z "${_translated_text}" ]]; then
-            if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]]; then
+            if [[ ! "${_locale}" = "C" ]] && [[ ! "${_locale}" = "en_US" ]] && [[ "${debug}" = true ]]; then
                 echo "$(text -nc cyan "[WFA]") $(text -nc yellow "Warning") No translation data was found (${*})" 1>&2
             fi
             echo "${*}"
