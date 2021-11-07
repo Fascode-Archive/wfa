@@ -277,17 +277,17 @@ usage (){
         echo "    ${wfa_command} {-h --help}"
         echo "    ${wfa_command} {-A --vote}"
         echo "    ${wfa_command} {-V --version}"
-       #echo "    ${wfa_command} {-D --database}    <options> <package(s)>"
-       #echo "    ${wfa_command} {-F --files}       [options] [package(s)]"
+        echo "    ${wfa_command} {-D --database}    <options> <package(s)>"
+        echo "    ${wfa_command} {-F --files}       [options] [package(s)]"
         echo "    ${wfa_command} {-Q --query}       [options] [package(s)]"
         echo "    ${wfa_command} {-R --remove}      [options] <package(s)>"
         echo "    ${wfa_command} {-S --sync}        [options] [package(s)]"
-       #echo "    ${wfa_command} {-T --deptest}     [options] [package(s)]"
-       #echo "    ${wfa_command} {-U --upgrade}     [options] <file(s)>"
-       #echo
-       #echo "New operations:"
-       #echo "    ${wfa_command} {-P --show}        [options]"
-       #echo "    ${wfa_command} {-G --getpkgbuild} [package(s)]"
+        echo "    ${wfa_command} {-T --deptest}     [options] [package(s)]"
+        echo "    ${wfa_command} {-U --upgrade}     [options] <file(s)>"
+        #echo
+        #echo "New operations:"
+        #echo "    ${wfa_command} {-P --show}        [options]"
+        #echo "    ${wfa_command} {-G --getpkgbuild} [package(s)]"
         echo
         echo "New options:"
         echo "       --repo             Assume targets are from the repositories"
@@ -358,10 +358,68 @@ usage (){
         echo "      --noconfirm      do not ask for any confirmation"
     }
 
+    local _wfa_usage_database
+    _wfa_usage_database() {
+        echo "usage:  pacman {-D --database} <options> <package(s)>"
+        echo "options:"
+        echo "  -b, --dbpath <path>  set an alternate database location"
+        echo "  -k, --check          test local database for validity (-kk for sync databases)"
+        echo "  -q, --quiet          suppress output of success messages"
+        echo "  -r, --root <path>    set an alternate installation root"
+        echo "  -v, --verbose        be verbose"
+        echo "      --arch <arch>    set an alternate architecture"
+        echo "      --asdeps         mark packages as non-explicitly installed"
+        echo "      --asexplicit     mark packages as explicitly installed"
+        echo "      --cachedir <dir> set an alternate package cache location"
+        echo "      --color <when>   colorize the output"
+        echo "      --config <path>  set an alternate configuration file"
+        echo "      --confirm        always ask for confirmation"
+        echo "      --debug          display debug messages"
+        echo "      --disable-download-timeout"
+        echo "                       use relaxed timeouts for download"
+        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
+        echo "      --hookdir <dir>  set an alternate hook location"
+        #echo "      --logfile <path> set an alternate log file"
+        echo "      --noconfirm      do not ask for any confirmation"
+        #echo "      --sysroot        operate on a mounted guest system (root-only)"
+    }
+
+    local _wfa_usage_files
+    _wfa_usage_files(){
+        echo "usage:  pacman {-F --files} [options] [file(s)]"
+        echo "options:"
+        echo "  -b, --dbpath <path>  set an alternate database location"
+        echo "  -l, --list           list the files owned by the queried package"
+        echo "  -q, --quiet          show less information for query and search"
+        echo "  -r, --root <path>    set an alternate installation root"
+        echo "  -v, --verbose        be verbose"
+        echo "  -x, --regex          enable searching using regular expressions"
+        echo "  -y, --refresh        download fresh package databases from the server"
+        echo "                       (-yy to force a refresh even if up to date)"
+        echo "      --arch <arch>    set an alternate architecture"
+        echo "      --cachedir <dir> set an alternate package cache location"
+        echo "      --color <when>   colorize the output"
+        echo "      --config <path>  set an alternate configuration file"
+        echo "      --confirm        always ask for confirmation"
+        echo "      --debug          display debug messages"
+        echo "      --disable-download-timeout"
+        echo "                       use relaxed timeouts for download"
+        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
+        echo "      --hookdir <dir>  set an alternate hook location"
+        echo "      --logfile <path> set an alternate log file"
+        echo "      --machinereadable"
+        echo "                       produce machine-readable output"
+        echo "      --noconfirm      do not ask for any confirmation"
+        #echo "      --sysroot        operate on a mounted guest system (root-only)"
+    }
+
+    local _wfa_usage_version
+    _wfa_usage_version(){ _wfa_usage; }
+
     if [[ "${operation}" = "none" ]]; then
         _wfa_usage
     elif [[ "${_pacman_help}" = true ]]; then
-        "${pacman_command}" -h --${operation}
+        "${pacman_command}" -h "--${operation}"
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         eval "_wfa_usage_${operation}"
     else
@@ -895,8 +953,8 @@ run_operation() {
 }
 
 # Parse options
-OPTS=("A" "Q" "R" "S" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n")
-OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:")
+OPTS=("A" "Q" "R" "S" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
+OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 getopt -Q "${GETOPT[@]}" || exit 1
 readarray -t OPT < <(getopt "${GETOPT[@]}")
@@ -926,6 +984,20 @@ while true; do
         -V | --version)
             set_operation "version"
             shift 1
+            ;;
+        
+        #-- AUR用の処理は何も実装されていません --#
+        -D | --database)
+            set_operation "database"
+            ;;
+        -T | --deptest)
+            set_operation "deptest"
+            ;;
+        -U | --upgrade)
+            set_operation "upgrade"
+            ;;
+        -F | --files)
+            set_operation "files"
             ;;
         --)
             shift
@@ -1075,6 +1147,9 @@ while true; do
             esac
             shift 1
             ;;
+        -k | --check)
+            add_args pacman "--check"
+            ;;
         -q | --quiet)
             quiet=true
             add_args pacman "--quiet"
@@ -1082,6 +1157,18 @@ while true; do
             ;;
         -n | --nosave)
             add_args pacman "--nosave"
+            shift 1
+            ;;
+        -r | --root)
+            add_args pacman "--root" "${2}"
+            shift 1
+            ;;
+        --asexplicit)
+            add_args pacman "--asexplicit"
+            shift 1
+            ;;
+        --asdeps)
+            add_args pacman "--asdeps"
             shift 1
             ;;
         --arch)
