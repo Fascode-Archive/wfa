@@ -839,8 +839,24 @@ install_package() {
 }
 
 upgrade_aur_package() {
-    #ここまで翻訳
     msg_error "This is a feature that has not been implemented yet"
+    return 0
+
+    local _aur_json _resultcount _apiurl="${aururl}/rpc/?v=5&type=info"
+    while read -r _pkg;do
+        _apiurl="${_apiurl}&arg[]=${_pkg}"
+    done < <(run_pacman "${pacman_args[@]}" -Qmq)
+
+    _aur_json=$("${curl_command}" "${curl_args[@]}" -sL "${_apiurl}" | jq -r)
+    _resultcount="$(echo "${_aur_json}" | jq -r ".resultcount")"
+    if (( "${_resultcount:-"0"}" != 0 )); then
+        _aur_json="$(echo  "${_aur_json}" | jq -r ".results[]")"
+    fi
+
+    local _aurpkgname _aurpkgremotever _aurpkglocalver
+
+
+
 }
 
 operation_sync(){
