@@ -450,7 +450,11 @@ check_repo_package() {
 check_installed_package() { "${pacman_command}" -Qq "${1}" > /dev/null 2>&1 && return 0 || return 1; }
 
 # この関数に渡されたオペレーションが実行中の場合のみ正常終了します。
-check_operation() { [[ "${1}" = "${operation}" ]] && return 0 || return 1; }
+check_operation() {
+    [[ "${operation}" = "none" ]] && return 2
+    [[ ! "${1}" = "${operation}" ]] && return 1
+    return 0
+}
 
 # ~/.cacheに相当するディレクトリを返します
 get_cache_dir() {
