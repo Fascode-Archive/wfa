@@ -76,6 +76,9 @@ declare -A ja_JP=(
     ["%s %s (+%s) → (+%s)"]="%s %s (+%s) → (+%s)"
     ["Getting post-voting information ..."]="投票後の情報を取得しています..."
     ["no operation specified (use -h for help)"]="オペレーションが指定されていません (-h を使ってヘルプを見て下さい)"
+    ["%s: local (%s) is newer than AUR (%s)"]="%s: ローカルのパッケージ (%s) は AUR (%s) よりも新しいバージョンです"
+    ["Searching AUR for updates..."]="AUR からアップデートを検索..."
+    ["Getting information from AUR..."]="AUR から情報を取得..."
 )
 
 
@@ -840,8 +843,10 @@ install_package() {
 
 upgrade_aur_package() {
     msg_error "This is a feature that has not been implemented yet"
-    return 0
+    [[ "${debug}" = false ]] && return 0
 
+    # インストールされているAUR由来のパッケージを検索
+    msg_info "Searching AUR for updates..."
     local _aur_json _resultcount _apiurl="${aururl}/rpc/?v=5&type=info"
     while read -r _pkg;do
         _apiurl="${_apiurl}&arg[]=${_pkg}"
@@ -851,12 +856,40 @@ upgrade_aur_package() {
     _resultcount="$(echo "${_aur_json}" | jq -r ".resultcount")"
     if (( "${_resultcount:-"0"}" != 0 )); then
         _aur_json="$(echo  "${_aur_json}" | jq -r ".results[]")"
+    else
+        return 0
     fi
 
+    # 情報を取得
+    msg_info "Getting information from AUR..."
     local _aurpkgname _aurpkgremotever _aurpkglocalver
+    readarray -t _aurpkgname      < <(jq -r .Name <<< "${_aur_json}")
+    readarray -t _aurpkgremotever < <(jq -r .Version <<< "${_aur_json}")
+    readarray -t _aurpkglocalver  < <(
+        printf "%s\0" "${_aurpkgname[@]}" | xargs -0 -I{} pacman -Q {} | cut -d " " -f 2
+    )
 
+    # 値を比較
+    local _upgradepkg
+    for (( _count=0; _count<= "${#_aurpkgname[@]}" - 1 ; _count++ )); do
+        #echo "${_aurpkgname[${_count}]}: remote=${_aurpkgremotever[${_count}]} local=${_aurpkglocalver[${_count}]}"
 
+        # vercmp <Remote> <Local>
+        # < 0 => Local is newer than AUR
+        # = 0 => Local is the latest version
+        # > 0 => Local is out of date 
+        _versionStatus="$(vercmp "${_aurpkgremotever[${_count}]}" "${_aurpkglocalver[${_count}]}")"
 
+        (( _versionStatus == 0 )) && continue
+        (( _versionStatus < 0 )) && {
+            #msg_warn "%s: local (%s) is newer than AUR (%s)" "${_aurpkgname[${_count}]}" "${_aurpkglocalver[${_count}]}" "${_aurpkgremotever[${_count}]}"
+            continue
+        }
+        (( _versionStatus > 0 )) && _upgradepkg+=("${_aurpkgname[${_count}]}")
+    done
+    printf "%s\n" "${_upgradepkg[@]}"
+
+    exit 0
 }
 
 operation_sync(){
