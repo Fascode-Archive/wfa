@@ -120,6 +120,7 @@ sync_upgrade=false
 quiet=false
 pass_to_pacman=false
 needed=false
+changelog=true
 
 #-- ask options (bool) --#
 cleanbuild=none
@@ -991,32 +992,67 @@ run_operation() {
     eval "operation_${_operation}"
 }
 
-# Parse options
-OPTS=("A" "D" "F" "Q" "R" "S" "T" "U" "h" "V" "d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
-OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit" "needed")
-GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
-readarray -t PARSED_ARGS < <(getopt "${GETOPT[@]}")
+# Parse operation
 RAW_ARGS=("${@}")
-
-eval set -- "${PARSED_ARGS[@]}"
-msg_debug "Argument: ${PARSED_ARGS[*]}"
+OPTS=("h" "V" "D" "F" "Q" "R" "S" "T" "U" "A")
+OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade")
+GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+eval set -- "$(getopt -q "${GETOPT[@]}")"
 unset OPTS OPTL
-
 while true; do
     case "${1}" in
-        -A | --vote    ) set_operation "vote"     && pass_to_pacman=false && shift 1 ;;
+        -h | --help    ) usage                                            && exit  0 ;;
+        -V | --version ) set_operation "version"  && pass_to_pacman=false && shift 1 ;;
+        -D | --database) set_operation "database" && pass_to_pacman=true  && shift 1 ;;
+        -F | --files   ) set_operation "files"    && pass_to_pacman=true  && shift 1 ;;
         -Q | --query   ) set_operation "query"    && pass_to_pacman=false && shift 1 ;;
         -R | --remove  ) set_operation "remove"   && pass_to_pacman=false && shift 1 ;;
         -S | --sync    ) set_operation "sync"     && pass_to_pacman=false && shift 1 ;;
-        -V | --version ) set_operation "version"  && pass_to_pacman=false && shift 1 ;;
-        -D | --database) set_operation "database" && pass_to_pacman=true  && shift 1 ;;
         -T | --deptest ) set_operation "deptest"  && pass_to_pacman=true  && shift 1 ;;
         -U | --upgrade ) set_operation "upgrade"  && pass_to_pacman=true  && shift 1 ;;
-        -F | --files   ) set_operation "files"    && pass_to_pacman=true  && shift 1 ;;
+        -A | --vote    ) set_operation "vote"     && pass_to_pacman=false && shift 1 ;;
         --             ) shift 1 && break ;;
         *              ) shift 1          ;;
     esac
 done
+
+
+# Parse options
+case "${operation}" in
+    "query")
+        OPTS=("b:" "c" "d" "e" "g" "i" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v")
+        OPTL=("dbpath" "changelog" "deps" "explicit" "groups" "info" "check" "list" "foreign" "native" "owns" "file" "quiet" "root" "search" "unrequired" "upgrades" "verbose")
+        GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+        while true; do
+            case "${1}" in
+                -b | --dbpath    ) add_args pacman "--dbpath '${2}'"               && shift 2 ;;
+                -c | --changelog ) add_args pacman "--changelog" && changelog=true && shift 1 ;;
+
+            esac
+        done
+        ;;
+    "remove")
+        OPTS=("b" "c" "d" "n" "p" "r" "s" "u" "v")
+        OPTL=("dbpath" "cascade" "nodeps" "nosave" "print" "root" "recursive" "unneeded" "verbose")
+        GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+        ;;
+    "sync")
+        OPTS=("b:" "c" "d" "g" "i" "l:" "p" "q" "r:" "s" "u" "v" "w" "y")
+        OPTL=("dbpath:" "clean" "nodeps" "groups" "info" "list:" "print" "quiet" "root:" "search" "sysupgrade" "verbose" "downloadonly" "refresh"
+              "arch:" "asdeps" "asexplicit" "assume-installed:" "cachedir:" )
+        ;;
+esac
+
+OPTS=("d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
+OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit" "needed")
+GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+readarray -t PARSED_ARGS < <(getopt "${GETOPT[@]}")
+
+
+eval set -- "${PARSED_ARGS[@]}"
+unset OPTS OPTL
+
+
 
 if [[ "${pass_to_pacman}" = false ]]; then
     eval set -- "${PARSED_ARGS[@]}"
