@@ -280,8 +280,6 @@ remove() {
 }
 
 usage (){
-    local _pacman_help="${pass_to_pacman}"
-
     local _wfa_usage
     _wfa_usage() {
         echo "Usage:"
@@ -290,7 +288,6 @@ usage (){
         echo
         echo "operations:"
         echo "    ${wfa_command} {-h --help}"
-        echo "    ${wfa_command} {-A --vote}"
         echo "    ${wfa_command} {-V --version}"
         echo "    ${wfa_command} {-D --database}    <options> <package(s)>"
         echo "    ${wfa_command} {-F --files}       [options] [package(s)]"
@@ -299,8 +296,9 @@ usage (){
         echo "    ${wfa_command} {-S --sync}        [options] [package(s)]"
         echo "    ${wfa_command} {-T --deptest}     [options] [package(s)]"
         echo "    ${wfa_command} {-U --upgrade}     [options] <file(s)>"
-        #echo
-        #echo "New operations:"
+        echo
+        echo "New operations:"
+        echo "    ${wfa_command} {-A --vote}"
         #echo "    ${wfa_command} {-P --show}        [options]"
         #echo "    ${wfa_command} {-G --getpkgbuild} [package(s)]"
         echo
@@ -327,65 +325,21 @@ usage (){
         echo "This program is an alpha version that is not yet stable"
         echo "If you find a bug, please share it on GitHub"
         echo "https://github.com/hayao0819/wfa/issues"
-        echo
     }
-
-    local _wfa_usage_sync
-    _wfa_usage_sync() {
-        echo "usage:  ${wfa_command} {-S --sync} [options] [package(s)]"
-        echo "options:"
-        echo "  -b, --dbpath <path>  set an alternate database location"
-        echo "  -c, --clean          remove old packages from cache directory (-cc for all)"
-        echo "  -d, --nodeps         skip dependency version checks (-dd to skip all checks)"
-        echo "  -s, --search <regex> search remote repositories for matching strings"
-        echo "  -u, --sysupgrade     upgrade installed packages (-uu enables downgrades)"
-        echo "  -y, --refresh        download fresh package databases from the server"
-        echo "                       (-yy to force a refresh even if up to date)"
-        echo "      --arch <arch>    set an alternate architecture"
-        echo "      --color <when>   colorize the output"
-        echo "      --config <path>  set an alternate configuration file"
-        echo "      --confirm        always ask for confirmation"
-        echo "      --debug          display debug messages"
-        echo "      --disable-download-timeout"
-        echo "                       use relaxed timeouts for download"
-        echo "      --gpgdir <path>  set an alternate home directory for GnuPG"
-        echo "      --hookdir <dir>  set an alternate hook location"
-        echo "      --ignore <pkg>   ignore a package upgrade (can be used more than once)"
-        echo "      --ignoregroup <grp>"
-        echo "                       ignore a group upgrade (can be used more than once)"
-        echo "      --noconfirm      do not ask for any confirmation"
-    }
-
-    local _wfa_usage_remove
-    _wfa_usage_remove() {
-        echo "usage:  ${wfa_command} {-R --remove} [options] <package(s)>"
-        echo "options:"
-        echo "  -b, --dbpath <path>  set an alternate database location"
-        echo "  -d, --nodeps         skip dependency version checks (-dd to skip all checks)"
-        echo "  -u, --unneeded       remove unneeded packages"
-        echo "      --arch <arch>    set an alternate architecture"
-        echo "      --color <when>   colorize the output"
-        echo "      --config <path>  set an alternate configuration file"
-        echo "      --confirm        always ask for confirmation"
-        echo "      --debug          display debug messages"
-        echo "      --disable-download-timeout"
-        echo "                       use relaxed timeouts for download"
-        echo "      --noconfirm      do not ask for any confirmation"
-    }
-
 
     local _wfa_usage_version
     _wfa_usage_version(){ _wfa_usage; }
 
+    local _wfa_usage_vote
+    _wfa_usage_vote(){ _wfa_usage; }
+
     if [[ "${operation}" = "none" ]]; then
         _wfa_usage
-    elif [[ "${_pacman_help}" = true ]]; then
-        "${pacman_command}" -h "--${operation}"
     elif [[ "$(type -t "_wfa_usage_${operation}" )" = "function" ]]; then
         eval "_wfa_usage_${operation}"
     else
         case "${operation}" in
-            database | deptest | upgrade | files)
+            "version" | "database" | "files" | "query" | "remove" | "sync" | "deptest" | "upgrade")
                 "${pacman_command}" -h "--${operation}"
                 ;;
             *)
@@ -1011,7 +965,7 @@ GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "
 eval set -- "$(getopt -q "${GETOPT[@]}")"
 while true; do
     case "${1}" in
-        -h | --help    ) usage                                            && exit  0 ;;
+        -h | --help    ) usage                                            ;  exit  0 ;;
         -V | --version ) set_operation "version"  && pass_to_pacman=false && shift 1 ;;
         -D | --database) set_operation "database" && pass_to_pacman=true  && shift 1 ;;
         -F | --files   ) set_operation "files"    && pass_to_pacman=true  && shift 1 ;;
