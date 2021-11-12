@@ -1153,6 +1153,39 @@ getopt -Q "${GETOPT[@]}"
 eval set -- "${PARSED_ARGS[@]}"
 while true; do
     case "${1}" in
+        -a | --aur    ) force_aur=true               ;;
+        --aururl      ) aururl="${2}"                ;;
+        --bash-debug  ) bash_debug=true  && set -xv  ;;
+        --curl        ) curl_command="${2}"          ;;
+        --curlflags   ) add_args curl "${2}"         ;;
+        --git         ) git_command="${2}"           ;;
+        --gitflags    ) add_args git "${2}"          ;;
+        --makepkg     ) makepkg_command="${2}"       ;;
+        --mflags      ) add_args makepkg "${2}"      ;;
+        --msg-debug   ) msgdebug=true                ;;
+        --nocolor     ) add_args pacman "--color never" && nocolor=true ;;
+        --pacman      ) pacman_command="${2}"        ;;
+        --wfa-debug   ) debug=true                   ;;
+
+        --makepkgconfig)
+            if [[ "${nomakepkgconf}" = false ]]; then
+                makepkg_config="${2}"
+            else
+                msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
+            fi
+            shift 2
+            ;;
+        --nomakepkgconf)
+            makepkg_config="/etc/makepkg.conf"
+            nomakepkgconf=true
+            shift 1
+            ;;
+        --puella)
+            text -flb "Please make a contract with me and become a Puella Magi !"
+            echo
+            shift 1
+            exit 0
+            ;;
     esac
     [[ "${1}" = "--" ]] && break
     if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
@@ -1166,49 +1199,6 @@ done
 
 specified_packages=("${@}")
 unset OPTS OPTL
-
-
-
-#             -a | --aur    ) force_aur=true                            && shift 1 ;;
-#            
-#             --aururl      ) aururl="${2}"                                           && shift 2 ;;
-#             --bash-debug  ) bash_debug=true                    && set -xv           && shift 1 ;;
-
-#             --curl        ) curl_command="${2}"                                     && shift 2 ;;
-#             --curlflags   ) add_args curl "${2}"                                    && shift 2 ;;
-
-#             --git         ) git_command="${2}"                                      && shift 2 ;;
-#             --gitflags    ) add_args git "${2}"                                     && shift 2 ;;
-#             --makepkg     ) makepkg_command="${2}"                                  && shift 2 ;;
-#             --mflags      ) add_args makepkg "${2}"                                 && shift 2 ;;
-#             --msg-debug   ) msgdebug=true                                           && shift 1 ;;
-
-#             --nocolor     ) add_args pacman "--color never" && nocolor=true         && shift 1 ;;
-
-#             --pacman      ) pacman_command="${2}"                                   && shift 2 ;;
-#             --wfa-debug   ) debug=true                                              && shift 1 ;;
-
-#             --makepkgconfig)
-#                 if [[ "${nomakepkgconf}" = false ]]; then
-#                     makepkg_config="${2}"
-#                 else
-#                     msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
-#                 fi
-#                 shift 2
-#                 ;;
-#             --nomakepkgconf)
-#                 makepkg_config="/etc/makepkg.conf"
-#                 nomakepkgconf=true
-#                 shift 1
-#                 ;;
-#             --puella)
-#                 text -flb "Please make a contract with me and become a Puella Magi !"
-#                 echo
-#                 shift 1
-#                 exit 0
-#                 ;;
-
-
 
 # Get architecture fron pacman.conf
 [[ -z "${arch-""}" ]] && arch="$(_pacman_conf Architecture)"
