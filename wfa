@@ -408,6 +408,15 @@ set_operation() {
     fi
 }
 
+get_options(){
+    local _output
+    { [[ "${operation}" = "query" ]] || [[ "${operation}" = "sync" ]]; }
+    for _output in "$(eval printf "%s\\\n" "\"\${${operation}_options[@]}\"" | grep -cx "${1}")" "$(printf "%s\n" "${common_options[@]}" | grep -cx "${1}")"; do
+        (( _output != 0 )) || continue && echo "${_output}" && return 0
+    done
+    echo 0
+}
+
 _pacman_conf(){ pacman-conf --config="${pacman_config}" "${@}"; }
 
 run_sudo() { (( UID == 0 )) || eval "sudo" "${@}"; return 0 && eval "${@}"; }
@@ -905,20 +914,15 @@ upgrade_aur_package() {
 }
 
 operation_sync(){
-    local _package
-    if (( "${sync_clean_count}" >= 1 )); then
-        remove "$(get_cache_dir)/wfa"
-        run_pacman -S "${pacman_args[@]}" "-$(yes "c" | head -n "${sync_clean_count}")"
-    fi
-
-
-    if [[ "${sync_search}" = true ]]; then
+    #if [[ "${sync_search}" = true ]]; then
+    if (( $(get_options search) != 0 )); then
         for _package in "${specified_packages[@]}"; do
             search_aur_package "${_package}"
         done
         "${pacman_command}" "${pacman_args[@]}" "${specified_packages[@]}" || true
     else
-        if [[ "${sync_upgrade}" = true ]]; then
+        #if [[ "${sync_upgrade}" = true ]]; then
+        if (( $(get_options upgrade) != 0 )); then
             upgrade_aur_package
             run_pacman -S "${pacman_args[@]}" --sysupgrade
         fi
@@ -1042,13 +1046,13 @@ case "${operation}" in
                 -u | --upgrades  ) query_options+=(upgrades)  ;; # 未実装
             esac
 
-            [[ "${1}" = "--" ]] && break
+            [[ "${1}" = "--" ]] && shift 1 && break
             if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-                add_args pacman "${1}" "${2}"
+                #add_args pacman "${1}" "${2}"
                 shift 2
                 continue
             fi
-            add_args pacman "${1}"
+            #add_args pacman "${1}"
             shift 1
         done
         ;;
@@ -1080,13 +1084,13 @@ case "${operation}" in
                 --noprogressbar | --noscriptlet | --sysroot ) sync_options+=("$(sed "s|^--||g" <<< "${2}" ))") ;;
             esac
 
-            [[ "${1}" = "--" ]] && break
+            [[ "${1}" = "--" ]] && shift 1 && break
             if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-                add_args pacman "${1}" "${2}"
+                #add_args pacman "${1}" "${2}"
                 shift 2
                 continue
             fi
-            add_args pacman "${1}"
+            #add_args pacman "${1}"
             shift 1
         done
         ;;
@@ -1131,13 +1135,13 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
             --verbose ) common_options+=("$(sed "s|^--||g" <<< "${2}" ))") ;;
         esac
 
-        [[ "${1}" = "--" ]] && break
+        [[ "${1}" = "--" ]] && shift 1 && break
         if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-            add_args pacman "${1}" "${2}"
+            #add_args pacman "${1}" "${2}"
             shift 2
             continue
         fi
-        add_args pacman "${1}"
+        #add_args pacman "${1}"
         shift 1
     done
 fi
@@ -1187,7 +1191,7 @@ while true; do
             exit 0
             ;;
     esac
-    [[ "${1}" = "--" ]] && break
+    [[ "${1}" = "--" ]] && shift 1 && break
     if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
         add_args pacman "${1}" "${2}"
         shift 2
@@ -1206,15 +1210,6 @@ unset OPTS OPTL
 # Show message
 [[ "${force_aur}" = true ]] && msg_debug "Assume targets are from the AUR"
 
-
-if [[ "${pass_to_pacman}" = false ]]; then
-    # Run database update
-    if (( "${option_y_count}" == 1 )); then
-        run_pacman "${pacman_args[@]}" -Sy
-    elif (( "${option_y_count}" >= 2 )); then
-        run_pacman "${pacman_args[@]}" -Syy
-    fi
-fi
 
 # set_operationで設定された操作を実行
 case "${operation}" in
