@@ -757,7 +757,7 @@ search_aur_package() {
     #local _found_pkgname=($(echo "${_aur_json}" | jq -r ".Name" ))
     readarray -t _found_pkgname < <(jq -r ".Name" <<< "${_aur_json}")
 
-    if [[ "${quiet}" = true ]]; then
+    if [[ "${quiet}" = true ]] || (( "$(get_options quiet)" != 0 )); then
         local _IFS="${IFS}"
         IFS=$'\n'
         echo "${_found_pkgname[*]}"
