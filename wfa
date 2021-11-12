@@ -1006,7 +1006,7 @@ run_operation() {
 
 RAW_ARGS=("${@}")
 OPTS=("h" "V" "D" "F" "Q" "R" "S" "T" "U" "A")
-OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade")
+OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade" "vote")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 eval set -- "$(getopt -q "${GETOPT[@]}")"
 while true; do
