@@ -100,6 +100,8 @@ wfa_path="$(dirname "$(realpath "${0}")")/$(basename "${0}")"
 #-- options (int) --#
 option_y_count=0
 sync_clean_count=0
+query_info_count=0
+sync_info_count=0
 
 #-- options (str) --#
 arch=
@@ -115,12 +117,18 @@ nocolor=false
 noconfirm=false
 nodeps=false
 nomakepkgconf=false
-sync_search=false
-sync_upgrade=false
 quiet=false
 pass_to_pacman=false
 needed=false
-changelog=true
+sync_groups=false
+sync_search=false
+sync_upgrade=false
+
+#-- Operation options --#
+query_options=()
+sync_options=()
+remove_options=()
+common_options=()
 
 #-- ask options (bool) --#
 cleanbuild=none
@@ -474,6 +482,13 @@ get_cache_dir() {
         _cache_dir="${HOME}/.cache"
     fi
     echo -n "${_cache_dir}"
+}
+
+# array_includes "array name" "string" "(output true/false)"
+array_includes(){ 
+    local _opt=(-x)
+    [[ "${3-false}" = false ]] && _opt+=(-q)
+    eval "printf %s\n \"\${${1}}\" | grep" "${_opt[@]}" "-- \"${2}\""
 }
 
 # Usage: get_srcinfo_data <path> <var>
@@ -992,7 +1007,6 @@ run_operation() {
     eval "operation_${_operation}"
 }
 
-# Parse operation
 RAW_ARGS=("${@}")
 OPTS=("h" "V" "D" "F" "Q" "R" "S" "T" "U" "A")
 OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade")
@@ -1005,53 +1019,74 @@ while true; do
         -D | --database) set_operation "database" && pass_to_pacman=true  && shift 1 ;;
         -F | --files   ) set_operation "files"    && pass_to_pacman=true  && shift 1 ;;
         -Q | --query   ) set_operation "query"    && pass_to_pacman=false && shift 1 ;;
-        -R | --remove  ) set_operation "remove"   && pass_to_pacman=false && shift 1 ;;
+        -R | --remove  ) set_operation "remove"   && pass_to_pacman=true  && shift 1 ;;
         -S | --sync    ) set_operation "sync"     && pass_to_pacman=false && shift 1 ;;
         -T | --deptest ) set_operation "deptest"  && pass_to_pacman=true  && shift 1 ;;
         -U | --upgrade ) set_operation "upgrade"  && pass_to_pacman=true  && shift 1 ;;
         -A | --vote    ) set_operation "vote"     && pass_to_pacman=false && shift 1 ;;
         --             ) shift 1 && break ;;
-        *              ) shift 1      ;
+        *              ) shift 1          ;;
     esac
 done
 eval set -- "${RAW_ARGS[@]}"
 
-# Parse options
+# Parse pacman options
 case "${operation}" in
     "query")
-        OPTS+=("b:" "c" "d" "e" "g" "i" "k" "l" "m" "n" "o:" "p:" "q" "r:" "s:" "t" "u" "v")
+        OPTS+=("c" "d" "e" "g" "i" "k" "l" "m" "n" "o:" "p:" "q" "s:" "t" "u" "v")
         OPTL+=("changelog" "deps" "explicit" "groups" "info" "check" "list" "foreign"
                "native" "owns" "file" "quiet" "search" "unrequired" "upgrades")
         GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
         readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
-        getopt -Q "${GETOPT[@]}"
         eval set -- "${PARSED_ARGS[@]}"
         while true; do
             case "${1}" in
-                -b | --dbpath    ) add_args pacman "--dbpath '${2}'"               && shift 2 ;;
-                -c | --changelog ) add_args pacman "--changelog" && changelog=true && shift 1 ;;
-
+                -c | --changelog ) query_options+=(changelog) ;;
+                -d | --deps      ) query_options+=(deps)      ;;
+                -e | --explicit  ) query_options+=(explicit)  ;;
+                -g | --groups    ) query_options+=(groups)    ;;
+                -i | --info      ) query_options+=(info)      ;;
+                -q | --quiet     ) quiet=true                 ;;
+                -s | --search    ) query_options+=(search)    ;;
+                -u | --upgrades  ) query_options+=(upgrades)  ;;
+                -v | --verbose   ) query_options+=(verbose)   ;;
             esac
+
+            [[ "${1}" = "--" ]] && break
+            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
+                add_args pacman "${1}" "${2}"
+                shift 2
+                continue
+            fi
+            add_args pacman "${1}"
+            shift 1
         done
         ;;
-    "remove")
-        OPTS+=("b:" "c" "d" "n" "p" "r:" "s" "u" "v")
-        OPTL+=("cascade" "nodeps" "nosave" "print" "recursive" "unneeded"
-               "assume-installed:" "dbonly" "noprogressbar" "noscriptlet" "print-format:")
-        GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
-        readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
-        getopt -Q "${GETOPT[@]}"
-        eval set -- "${PARSED_ARGS[@]}"
-        ;;
     "sync")
-        OPTS+=("b:" "c" "d" "g" "i" "l:" "p" "q" "r:" "s" "u" "v" "w" "y")
+        OPTS+=("c" "d" "g" "i" "l:" "p" "q" "s" "u" "w" "y")
         OPTL+=("clean" "nodeps" "groups" "info" "list:" "print" "quiet" "search" "sysupgrade" "downloadonly"
                "refresh" "asdeps" "asexplicit" "assume-installed:" "dbonly" "ignore:" "ignoregroup:" "logfile:"
                "needed" "noprogressbar" "noscriptlet" "overwrite:" "print-format:" "sysroot")
         GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
         readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
-        getopt -Q "${GETOPT[@]}"
         eval set -- "${PARSED_ARGS[@]}"
+        while true; do
+            case "${1}" in
+                -c | --clean ) sync_options+=(clean)  ;;
+                -d | --nodeps) sync_options+=(nodeps) ;;
+
+
+            esac
+
+            [[ "${1}" = "--" ]] && break
+            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
+                add_args pacman "${1}" "${2}"
+                shift 2
+                continue
+            fi
+            add_args pacman "${1}"
+            shift 1
+        done
         ;;
     "none")
         msg_error "no operation specified (use -h for help)"
@@ -1069,9 +1104,32 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
     getopt -Q "${GETOPT[@]}"
     eval set -- "${PARSED_ARGS[@]}"
 fi
+
+# Parse wfa options
+eval set -- "${RAW_ARGS[@]}"
+OPTS+=("b:" "r:" "v")
+OPTL+=("dbpath:" "root:" "verbose" "arch:" "cachedir:" "color:" "config:" "confirm" "debug" "disable-download-timeout" "gpgdir:" "hookdir:" "logfile:" "noconfirm" "sysroot")
+GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
+readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
+getopt -Q "${GETOPT[@]}"
+eval set -- "${PARSED_ARGS[@]}"
+while true; do
+    case "${1}" in
+        -v | --verbose   ) query_options+=(verbose)   ;;
+    esac
+    [[ "${1}" = "--" ]] && break
+    if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
+        add_args pacman "${1}" "${2}"
+        shift 2
+        continue
+    fi
+    add_args pacman "${1}"
+    shift 1
+done
+
+
 unset OPTS OPTL
 
-exit 0
 
 OPTS=("d" "b:" "a" "y" "s" "u" "c" "q" "n" "k" "r:")
 OPTL=("query" "remove" "sync" "help" "version" "debug" "dbpath:" "aururl" "aur" "noconfirm" "config:" "makepkg:" "mflags:" "pacman:" "git:" "gitflags:" "gpg:" "gpgflags:" "makepkgconf:" "nomakepkgconf" "nodeps" "refresh" "bash-debug" "msg-debug" "sysupgrade" "color:" "nocolor" "clean" "quiet" "arch:" "confirm" "disable-download-timeout" "curl:" "curlflags:" "unneeded" "puella" "wfa-debug" "cascade" "ignoregroup:" "ignore:" "hookdir:" "gpgdir:" "cachedir:" "check" "root:" "asdeps" "asexplicit" "needed")
@@ -1082,156 +1140,92 @@ readarray -t PARSED_ARGS < <(getopt "${GETOPT[@]}")
 
 unset OPTS OPTL
 
+#             #-- Simple short options --#
+#             -a | --aur    ) force_aur=true                            && shift 1 ;;
+#             -k | --check  ) add_args pacman "--check"                 && shift 1 ;;
+#             -y | --refresh) option_y_count=$(( option_y_count + 1 ))  && shift 1 ;;
+#             -n | --nosave ) add_args pacman "--nosave"                && shift 1 ;;
+#             -r | --root   ) add_args pacman "--root" "${2}"           && shift 1 ;;
+#             -h | --help   ) usage                                     && exit  0 ;;
 
+#             #-- Simple long options --#
+#             --asdeps      ) add_args pacman "--asdeps"                              && shift 1 ;;
+#             --asexplicit  ) add_args pacman "--asexplicit"                          && shift 1 ;;
+#             --arch        ) add_args pacman "--arch ${2}"      && arch="${2}"       && shift 2 ;;
+#             --aururl      ) aururl="${2}"                                           && shift 2 ;;
+#             --bash-debug  ) bash_debug=true                    && set -xv           && shift 1 ;;
+#             --clean       ) sync_clean_count=$(( sync_clean_count + 1 ))            && shift 1 ;;
+#             --cascade     ) add_args pacman "--cascade"                             && shift 1 ;;
+#             --cachedir    ) add_args pacman "--cachedir" "${2}"                     && shift 2 ;;
+#             --curl        ) curl_command="${2}"                                     && shift 2 ;;
+#             --curlflags   ) add_args curl "${2}"                                    && shift 2 ;;
+#             --confirm     ) noconfirm=false                                         && shift 1 ;;
+#             --config      ) pacman_config="${2}" && add_args pacman "--config ${2}" && shift 2 ;;
+#             --debug       ) debug=true           && add_args pacman "--debug"       && shift 1 ;;
+#             --gpgdir      ) add_args pacman "--gpgdir ${2}"                         && shift 2 ;;
+#             --git         ) git_command="${2}"                                      && shift 2 ;;
+#             --gitflags    ) add_args git "${2}"                                     && shift 2 ;;
+#             --hookdir     ) add_args pacman "--hookdir ${2}"                        && shift 2 ;;
+#             --ignoregroup ) add_args pacman "--ignoregroup ${2}"                    && shift 2 ;;
+#             --ignore      ) add_args pacman "--ignore ${2}"                         && shift 2 ;;
+#             --makepkg     ) makepkg_command="${2}"                                  && shift 2 ;;
+#             --mflags      ) add_args makepkg "${2}"                                 && shift 2 ;;
+#             --msg-debug   ) msgdebug=true                                           && shift 1 ;;
+#             --noconfirm   ) add_args pacman "--noconfirm"   && noconfirm=true       && shift 1 ;;
+#             --nocolor     ) add_args pacman "--color never" && nocolor=true         && shift 1 ;;
+#             --needed      ) add_args pacman "--needed"      && needed=true          && shift 1 ;;
+#             --pacman      ) pacman_command="${2}"                                   && shift 2 ;;
+#             --recursive   ) add_args pacman "--recursive"                           && shift 1 ;;
+#             --search      ) sync_search=true                                        && shift 1 ;;
+#             --sysupgrade  ) sync_upgrade=true                                       && shift 1 ;;
+#             --unneeded    ) add_args pacman "--unneeded"                            && shift 1 ;;
+#             --wfa-debug   ) debug=true                                              && shift 1 ;;
 
-if [[ "${pass_to_pacman}" = false ]]; then
-    eval set -- "${PARSED_ARGS[@]}"
-    getopt -Q "${GETOPT[@]}" || exit 1
+#             #-- Other long options --#
+#             --color)
+#                 case "${2}" in
+#                     "never")
+#                         nocolor=true
+#                         add_args pacman "--color never"
+#                         ;;
+#                     "always")
+#                         nocolor=false
+#                         add_args pacman "--color always"
+#                         ;;
+#                     "auto")
+#                         msg_error "auto is not currently supported."
+#                         add_args pacman "--color auto"
+#                         ;;
+#                 esac
+#                 shift 2
+#                 ;;
+#             --disable-download-timeout)
+#                 add_args curl "--max-time 0"
+#                 add_args pacman "--disable-download-timeout"
+#                 shift 1
+#                 ;;
+#             --makepkgconfig)
+#                 if [[ "${nomakepkgconf}" = false ]]; then
+#                     makepkg_config="${2}"
+#                 else
+#                     msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
+#                 fi
+#                 shift 2
+#                 ;;
+#             --nomakepkgconf)
+#                 makepkg_config="/etc/makepkg.conf"
+#                 nomakepkgconf=true
+#                 shift 1
+#                 ;;
+#             --puella)
+#                 text -flb "Please make a contract with me and become a Puella Magi !"
+#                 echo
+#                 shift 1
+#                 exit 0
+#                 ;;
 
-    while true; do
-        case "${1}" in
-            #-- Simple short options --#
-            -a | --aur    ) force_aur=true                            && shift 1 ;;
-            -b | --dbpath ) add_args pacman "--dbpath '${2}'"         && shift 2 ;;
-            -k | --check  ) add_args pacman "--check"                 && shift 1 ;;
-            -y | --refresh) option_y_count=$(( option_y_count + 1 ))  && shift 1 ;;
-            -n | --nosave ) add_args pacman "--nosave"                && shift 1 ;;
-            -r | --root   ) add_args pacman "--root" "${2}"           && shift 1 ;;
-            -d | --nodeps ) add_args pacman "--nodeps" && nodeps=true && shift 1 ;;
-            -q | --quiet  ) add_args pacman "--quiet"  && quiet=true  && shift 1 ;;
-            -h | --help   ) usage                                     && exit  0 ;;
+#     specified_packages=("${@}")
 
-            #-- Simple long options --#
-            --asdeps      ) add_args pacman "--asdeps"                              && shift 1 ;;
-            --asexplicit  ) add_args pacman "--asexplicit"                          && shift 1 ;;
-            --arch        ) add_args pacman "--arch ${2}"      && arch="${2}"       && shift 2 ;;
-            --aururl      ) aururl="${2}"                                           && shift 2 ;;
-            --bash-debug  ) bash_debug=true                    && set -xv           && shift 1 ;;
-            --clean       ) sync_clean_count=$(( sync_clean_count + 1 ))            && shift 1 ;;
-            --cascade     ) add_args pacman "--cascade"                             && shift 1 ;;
-            --cachedir    ) add_args pacman "--cachedir" "${2}"                     && shift 2 ;;
-            --curl        ) curl_command="${2}"                                     && shift 2 ;;
-            --curlflags   ) add_args curl "${2}"                                    && shift 2 ;;
-            --confirm     ) noconfirm=false                                         && shift 1 ;;
-            --config      ) pacman_config="${2}" && add_args pacman "--config ${2}" && shift 2 ;;
-            --debug       ) debug=true           && add_args pacman "--debug"       && shift 1 ;;
-            --gpgdir      ) add_args pacman "--gpgdir ${2}"                         && shift 2 ;;
-            --git         ) git_command="${2}"                                      && shift 2 ;;
-            --gitflags    ) add_args git "${2}"                                     && shift 2 ;;
-            --hookdir     ) add_args pacman "--hookdir ${2}"                        && shift 2 ;;
-            --ignoregroup ) add_args pacman "--ignoregroup ${2}"                    && shift 2 ;;
-            --ignore      ) add_args pacman "--ignore ${2}"                         && shift 2 ;;
-            --makepkg     ) makepkg_command="${2}"                                  && shift 2 ;;
-            --mflags      ) add_args makepkg "${2}"                                 && shift 2 ;;
-            --msg-debug   ) msgdebug=true                                           && shift 1 ;;
-            --noconfirm   ) add_args pacman "--noconfirm"   && noconfirm=true       && shift 1 ;;
-            --nocolor     ) add_args pacman "--color never" && nocolor=true         && shift 1 ;;
-            --needed      ) add_args pacman "--needed"      && needed=true          && shift 1 ;;
-            --pacman      ) pacman_command="${2}"                                   && shift 2 ;;
-            --recursive   ) add_args pacman "--recursive"                           && shift 1 ;;
-            --search      ) sync_search=true                                        && shift 1 ;;
-            --sysupgrade  ) sync_upgrade=true                                       && shift 1 ;;
-            --unneeded    ) add_args pacman "--unneeded"                            && shift 1 ;;
-            --wfa-debug   ) debug=true                                              && shift 1 ;;
-
-            #-- Other long options --#
-            --color)
-                case "${2}" in
-                    "never")
-                        nocolor=true
-                        add_args pacman "--color never"
-                        ;;
-                    "always")
-                        nocolor=false
-                        add_args pacman "--color always"
-                        ;;
-                    "auto")
-                        msg_error "auto is not currently supported."
-                        add_args pacman "--color auto"
-                        ;;
-                esac
-                shift 2
-                ;;
-            --disable-download-timeout)
-                add_args curl "--max-time 0"
-                add_args pacman "--disable-download-timeout"
-                shift 1
-                ;;
-            --makepkgconfig)
-                if [[ "${nomakepkgconf}" = false ]]; then
-                    makepkg_config="${2}"
-                else
-                    msg_warn "--nomakepkgconf is specified.\n--makepkgconf has been ignored."
-                fi
-                shift 2
-                ;;
-            --nomakepkgconf)
-                makepkg_config="/etc/makepkg.conf"
-                nomakepkgconf=true
-                shift 1
-                ;;
-            --puella)
-                text -flb "Please make a contract with me and become a Puella Magi !"
-                echo
-                shift 1
-                exit 0
-                ;;
-
-            #-- Other short options --#
-            -s)
-                case "${operation}" in
-                    "sync")
-                        add_args pacman "--search"
-                        sync_search=true
-                        ;;
-                    "remove")
-                        add_args pacman "--recursive"
-                        ;;
-                    *)
-                        unavailable_in_this_operation
-                        ;;
-                esac
-                shift 1
-                ;;
-            -u)
-                case "${operation}" in
-                    "sync") 
-                        sync_upgrade=true;;
-                    "remove")
-                        add_args pacman "--unneeded"
-                        ;;
-                    "none")
-                        :
-                        ;;
-                    *)
-                        unavailable_in_this_operation
-                        ;;
-                esac
-                shift 1
-                ;;
-            -c)
-                case "${operation}" in
-                    "sync")
-                        sync_clean_count=$(( sync_clean_count + 1 ))
-                        ;;
-                    "remove")
-                        add_args pacman "--cascade"
-                        ;;
-                    *)
-                        unavailable_in_this_operation
-                        ;;
-                esac
-                shift 1
-                ;;
-
-            #-- for getopt --#
-            --) shift 1 && break ;;
-            * ) shift 1          ;;
-        esac
-    done
-
-    specified_packages=("${@}")
-fi
 
 # Get architecture fron pacman.conf
 [[ -z "${arch-""}" ]] && arch="$(_pacman_conf Architecture)"
@@ -1256,6 +1250,10 @@ case "${operation}" in
         ;;
     "database" | "deptest" | "upgrade" | "files")
         run_pacman "${RAW_ARGS[@]}"
+        ;;
+    "query")
+        msg_error "This is a feature that has not been implemented yet"
+        exit 0
         ;;
     "none")
         msg_error "no operation specified (use -h for help)"
