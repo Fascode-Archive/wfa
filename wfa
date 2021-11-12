@@ -1074,6 +1074,7 @@ case "${operation}" in
                 -g | --groups       ) sync_options+=(groups)       ;; # 未実装
                 -i | --info         ) sync_options+=(info)         ;; # 未実装
                 -p | --print        ) sync_options+=(print)        ;; # 未実装
+                -q | --quiet        ) quiet=true                   ;;
                 -s | --search       ) sync_options+=(search)       ;; # 未実装
                 -u | --sysupgrade   ) sync_options+=(sysupgrade)   ;; # 未実装
                 -w | --downloadonly ) sync_options+=(downloadonly) ;; # 未実装
