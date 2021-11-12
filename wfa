@@ -1109,7 +1109,7 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
            "gpgdir:" "hookdir:" "logfile:" "noconfirm" "sysroot")
     GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
     readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
-    getopt -Q "${GETOPT[@]}"
+    #getopt -Q "${GETOPT[@]}"
     eval set -- "${PARSED_ARGS[@]}"
     while true; do
         case "${1}" in
