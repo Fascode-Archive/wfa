@@ -427,19 +427,20 @@ wfa() { "${wfa_path}" "${@}"; }
 
 # pacmanの引数を追加する
 # https://github.com/FascodeNet/aptpac/blob/master/aptpac のADD_OPTION関数を参考
-# Usage: add_args [pacman/makepkg/git/gpg/sudo/curl] <args1> <args2>...
+# Usage: add_args [pacman/pacman_common/makepkg/git/gpg/sudo/curl] <args1> <args2>...
 add_args() {
     local _target="${1}" _args_array
     shift 1
 
     case "${_target}" in
-        "makepkg") makepkg_args+=("${@}") ;;
-        "pacman" ) pacman_args+=("${@}")  ;;
-        "git"    ) git_args=("${@}")      ;;
-        "gpg"    ) gpg_args=("${@}")      ;;
-        "sudo"   ) sudo_args=("${@}")     ;;
-        "curl"   ) curl_args=("${@}")     ;;
-        *        )
+        "makepkg"       ) makepkg_args+=("${@}")       ;;
+        "pacman"        ) pacman_args+=("${@}")        ;;
+        "pacman_common" ) pacman_common_args=("${@}") ;;
+        "git"           ) git_args=("${@}")            ;;
+        "gpg"           ) gpg_args=("${@}")            ;;
+        "sudo"          ) sudo_args=("${@}")           ;;
+        "curl"          ) curl_args=("${@}")           ;;
+        *               )
             msg_error "Failed to set the argument of %s" "${_target}"
             msg_error "Setting that command is not currently supported"
             exit 1
@@ -489,7 +490,7 @@ get_cache_dir() {
 array_includes(){ 
     local _opt=(-x)
     [[ "${3-false}" = false ]] && _opt+=(-q)
-    eval "printf %s\n \"\${${1}}\" | grep" "${_opt[@]}" "-- \"${2}\""
+    eval "printf %s\n \"\${${1}[@]}\" | grep" "${_opt[@]}" "-- \"${2}\""
 }
 
 # Usage: get_srcinfo_data <path> <var>
@@ -735,7 +736,7 @@ install_aur_package() {
     for _pkgfile in "${_pkgfilelist[@]}"; do
         printf "%s\n" "${_installed[@]}" | grep -qx "${_pkgfile}" && continue
         [[ ! -f "${_pkgfile}" ]] && continue
-        run_pacman "${pacman_args[@]}" -U --noconfirm "${_pkgfile}" && _installed+=("${_pkgfile}")
+        run_pacman -U --noconfirm "${_pkgfile}" && _installed+=("${_pkgfile}")
     done
 
 
@@ -1047,7 +1048,7 @@ case "${operation}" in
             esac
 
             [[ "${1}" = "--" ]] && shift 1 && break
-            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
+            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
                 #add_args pacman "${1}" "${2}"
                 shift 2
                 continue
@@ -1085,8 +1086,8 @@ case "${operation}" in
             esac
 
             [[ "${1}" = "--" ]] && shift 1 && break
-            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-                #add_args pacman "${1}" "${2}"
+            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
+            #add_args pacman "${1}" "${2}"
                 shift 2
                 continue
             fi
@@ -1104,9 +1105,10 @@ esac
 # shellcheck disable=SC2001
 if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${operation}" = "sync" ]]; then
     eval set -- "${RAW_ARGS[@]}"
-    OPTS+=("b:" "r:" "v")
-    OPTL+=("dbpath:" "root:" "arch:" "cachedir:" "color:" "config:" "confirm" "debug" "disable-download-timeout" 
-           "gpgdir:" "hookdir:" "logfile:" "noconfirm" "sysroot")
+    COMMON_OPTS+=("b:" "r:" "v")
+    COMMON_OPTL+=("dbpath:" "root:" "arch:" "cachedir:" "color:" "config:" "confirm" "debug" "disable-download-timeout" 
+                  "gpgdir:" "hookdir:" "logfile:" "noconfirm" "sysroot")
+    OPTS+=("${COMMON_OPTS[@]}") OPTL+=("${COMMON_OPTL[@]}")
     GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
     readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
     #getopt -Q "${GETOPT[@]}"
@@ -1135,15 +1137,20 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
             --verbose ) common_options+=("$(sed "s|^--||g" <<< "${2}" ))") ;;
         esac
 
+        { array_includes COMMON_OPTS "${1//\-/}:" || array_includes COMMON_OPTL "${1//\-/}:"; } && add_args pacman_common "${1}" "${2}"
+        { array_includes COMMON_OPTS "${1//\-/}"  || array_includes COMMON_OPTL "${1//\-/}" ; } && add_args pacman_common "${1}"
+
         [[ "${1}" = "--" ]] && shift 1 && break
-        if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-            #add_args pacman "${1}" "${2}"
+        if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
+            array_includes pacman_args "${1}" || add_args pacman "${1}" "${2}"
             shift 2
             continue
         fi
-        #add_args pacman "${1}"
+        array_includes pacman_args "${1}" || add_args pacman "${1}"
         shift 1
     done
+
+    unset COMMON_OPTS COMMON_OPTL
 fi
 
 # Parse wfa options
@@ -1192,12 +1199,12 @@ while true; do
             ;;
     esac
     [[ "${1}" = "--" ]] && shift 1 && break
-    if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1/-/}:"; then
-        add_args pacman "${1}" "${2}"
+    if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
+        #add_args pacman "${1}" "${2}"
         shift 2
         continue
     fi
-    add_args pacman "${1}"
+    #add_args pacman "${1}"
     shift 1
 done
 
