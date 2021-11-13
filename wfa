@@ -869,7 +869,10 @@ upgrade_aur_package() {
 }
 
 operation_sync(){
-    #if [[ "${sync_search}" = true ]]; then
+    if (( $(get_options refresh) != 0 )) && [[ "${force_aur}" = false ]]; then
+        run_pacman "${pacman_common_args[@]}" --sync "-$(yes "y" | head -n "$(get_options refresh)")"
+    fi
+
     if (( $(get_options search) != 0 )); then
         for _package in "${specified_packages[@]}"; do
             search_aur_package "${_package}"
@@ -884,12 +887,10 @@ operation_sync(){
         for _package in "${specified_packages[@]}"; do
             if check_repo_package "${_package}" && [[ "${force_aur}" = false ]]; then
                 # 公式パッケージなのでpacmanでそのままインストール
-                run_pacman -S "${pacman_args[@]}" "${_package}"
+                run_pacman "${pacman_args[@]}" "${_package}"
             else
                 # AUR上のパッケージの場合の処理
                 install_aur_package "${_package}"
-                #msg_error "Getting the AUR package has not been implemented yet."
-                #exit 1
             fi
         done
     fi
@@ -1037,10 +1038,10 @@ case "${operation}" in
                 -i | --info         ) sync_options+=(info)         ;; # 未実装
                 -p | --print        ) sync_options+=(print)        ;; # 未実装
                 -q | --quiet        ) quiet=true                   ;;
-                -s | --search       ) sync_options+=(search)       ;; # 未実装
-                -u | --sysupgrade   ) sync_options+=(sysupgrade)   ;; # 未実装
+                -s | --search       ) sync_options+=(search)       ;;
+                -u | --sysupgrade   ) sync_options+=(sysupgrade)   ;;
                 -w | --downloadonly ) sync_options+=(downloadonly) ;; # 未実装
-                -y | --refresh      ) sync_options+=(refresh)      ;; # 未実装
+                -y | --refresh      ) sync_options+=(refresh)      ;;
                      --ignore       ) : ;; # 未実装
                      --ignoregroup  ) : ;; # 未実装
 
@@ -1064,8 +1065,8 @@ case "${operation}" in
         ;;
 esac
 
-# Parse common options
-if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${operation}" = "sync" ]]; then
+if [[ "${pass_to_pacman}" = false ]]; then
+    # Parse common options
     eval set -- "${RAW_ARGS[@]}"
     COMMON_OPTS+=("b:" "r:" "v")
     COMMON_OPTL+=("dbpath:" "root:" "arch:" "cachedir:" "color:" "config:" "confirm" "debug" "disable-download-timeout" 
@@ -1110,6 +1111,8 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
         fi
         shift 1
     done
+
+    msg_debug "Pacman args: %s\nOperation args: %s" "${pacman_args[*]}" "$(eval "printf '%s ' \"\${${operation}_options[*]}\"")"
 fi
 
 # Parse wfa options
@@ -1119,7 +1122,7 @@ OPTL+=("aur" "aururl:" "bash-debug" "curl:" "curlflags:" "git:" "gitflags:" "mak
        "pacman:" "wfa-debug" "makepkgconfig" "nomakepkgconf" "puella")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
-getopt -Q "${GETOPT[@]}"
+[[ "${pass_to_pacman}" = false ]] && getopt -Q "${GETOPT[@]}"
 eval set -- "${PARSED_ARGS[@]}"
 while true; do
     case "${1}" in
@@ -1161,14 +1164,13 @@ while true; do
     _noprefix="$(sed "s|^-*||g" <<< "${1}")"
     [[ "${1}" = "--" ]] && shift 1 && break
     if array_includes OPTS "${_noprefix}:" true || array_includes OPTL "${_noprefix}:"; then
+            [[ "${pass_to_pacman}" = true ]] && readarray -t RAW_ARGS < <(printf "%s\n" "${RAW_ARGS[@]}" | grep -vx -- "${1}" | grep -vx -- "${2}")
         shift 2
         continue
     fi
+    [[ "${pass_to_pacman}" = true ]] && readarray -t RAW_ARGS < <(printf "%s\n" "${RAW_ARGS[@]}" | grep -vx -- "${1}")
     shift 1
 done
-
-#msg_debug "Pacman args: ${pacman_args[*]}\nOperation args: $(eval "printf '%s\\\n' \"\${${operation}_options}\"")"
-msg_debug "Pacman args: %s\nOperation args: %s" "${pacman_args[*]}" "$(eval "printf '%s ' \"\${${operation}_options[*]}\"")"
 
 specified_packages=("${@}")
 unset OPTS OPTL
@@ -1186,7 +1188,7 @@ case "${operation}" in
         run_operation "${operation}"
         ;;
     "database" | "deptest" | "upgrade" | "files")
-        run_pacman "${RAW_ARGS[@]}"
+        run_pacman "--${operation}" "${RAW_ARGS[@]}"
         ;;
     "query")
         msg_error "This is a feature that has not been implemented yet"
