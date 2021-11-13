@@ -818,15 +818,15 @@ install_package() {
 }
 
 upgrade_aur_package() {
-    msg_error "This is a feature that has not been implemented yet"
-    [[ "${debug}" = false ]] && return 0
+    #msg_error "This is a feature that has not been implemented yet"
+    #[[ "${debug}" = false ]] && return 0
 
     # インストールされているAUR由来のパッケージを検索
     msg_info "Searching AUR for updates..."
     local _aur_json _resultcount _apiurl="${aururl}/rpc/?v=5&type=info"
     while read -r _pkg;do
         _apiurl="${_apiurl}&arg[]=${_pkg}"
-    done < <(run_pacman "${pacman_args[@]}" -Qmq)
+    done < <(run_pacman "${pacman_common_args[@]}" -Qmq)
 
     _aur_json=$("${curl_command}" "${curl_args[@]}" -sL "${_apiurl}" | jq -r)
     _resultcount="$(echo "${_aur_json}" | jq -r ".resultcount")"
@@ -874,12 +874,12 @@ operation_sync(){
         for _package in "${specified_packages[@]}"; do
             search_aur_package "${_package}"
         done
-        "${pacman_command}" "${pacman_args[@]}" "${specified_packages[@]}" || true
+        [[ "${force_aur}" = false ]] && { "${pacman_command}" "${pacman_args[@]}" "${specified_packages[@]}" || true; }
+        return 0
     else
-        #if [[ "${sync_upgrade}" = true ]]; then
-        if (( $(get_options upgrade) != 0 )); then
+        if (( $(get_options sysupgrade) != 0 )); then
             upgrade_aur_package
-            run_pacman -S "${pacman_args[@]}" --sysupgrade
+            [[ "${force_aur}" = false ]] && run_pacman "${pacman_common_args[@]}" --sync --sysupgrade
         fi
         for _package in "${specified_packages[@]}"; do
             if check_repo_package "${_package}" && [[ "${force_aur}" = false ]]; then
@@ -958,9 +958,12 @@ run_operation() {
     eval "operation_${_operation}"
 }
 
-RAW_ARGS=("${@}")
-OPTS=("h" "V" "D" "F" "Q" "R" "S" "T" "U" "A")
-OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade" "vote")
+
+# 引数解析
+RAW_ARGS=("${@}") OPTS=() OPTL=()
+OPERATION_OPTS=("h" "V" "D" "F" "Q" "R" "S" "T" "U" "A")
+OPERATION_OPTL=("help" "version" "database" "files" "query" "remove" "sync" "deptest" "upgrade" "vote")
+OPTS+=("${OPERATION_OPTS[@]}") OPTL+=("${OPERATION_OPTL[@]}")
 GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
 eval set -- "$(getopt -q "${GETOPT[@]}")"
 while true; do
@@ -984,9 +987,10 @@ eval set -- "${RAW_ARGS[@]}"
 # Parse pacman options
 case "${operation}" in
     "query")
-        OPTS+=("c" "d" "e" "g" "i" "k" "l" "m" "n" "o:" "p:" "q" "s:" "t" "u" "v")
-        OPTL+=("changelog" "deps" "explicit" "groups" "info" "check" "list" "foreign"
-               "native" "owns" "file" "quiet" "search" "unrequired" "upgrades")
+        MAIN_OPTS=("c" "d" "e" "g" "i" "k" "l" "m" "n" "o:" "p:" "q" "s:" "t" "u" "v")
+        MAIN_OPTL=("changelog" "deps" "explicit" "groups" "info" "check" "list" "foreign"
+                   "native" "owns" "file" "quiet" "search" "unrequired" "upgrades")
+        OPTS+=("${MAIN_OPTS[@]}") OPTL+=("${MAIN_OPTL[@]}")
         GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
         readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
         eval set -- "${PARSED_ARGS[@]}"
@@ -1001,26 +1005,30 @@ case "${operation}" in
                 -u | --upgrades  ) query_options+=(upgrades)  ;; # 未実装
             esac
 
+            _noprefix="$(sed "s|^-*||g" <<< "${1}")"
             [[ "${1}" = "--" ]] && shift 1 && break
-            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
-                #add_args pacman "${1}" "${2}"
+            if array_includes OPTS "${_noprefix}:" true || array_includes OPTL "${_noprefix}:"; then
+                add_args pacman "${1}" "${2}"
                 shift 2
                 continue
             fi
-            #add_args pacman "${1}"
+            add_args pacman "${1}"
             shift 1
         done
         ;;
     "sync")
-        OPTS+=("c" "d" "g" "i" "l:" "p" "q" "s" "u" "w" "y")
-        OPTL+=("clean" "nodeps" "groups" "info" "list:" "print" "quiet" "search" "sysupgrade" "downloadonly"
-               "refresh" "asdeps" "asexplicit" "assume-installed:" "dbonly" "ignore:" "ignoregroup:"
-               "needed" "noprogressbar" "noscriptlet" "overwrite:" "print-format:" "sysroot")
+        MAIN_OPTS+=("c" "d" "g" "i" "l:" "p" "q" "s" "u" "w" "y")
+        MAIN_OPTL+=("clean" "nodeps" "groups" "info" "list:" "print" "quiet" "search" "sysupgrade" "downloadonly"
+                    "refresh" "asdeps" "asexplicit" "assume-installed:" "dbonly" "ignore:" "ignoregroup:"
+                    "needed" "noprogressbar" "noscriptlet" "overwrite:" "print-format:" "sysroot")
+        OPTS+=("${MAIN_OPTS[@]}") OPTL+=("${MAIN_OPTL[@]}")
         GETOPT=(-o "$(printf "%s," "${OPTS[@]}")" -l "$(printf "%s," "${OPTL[@]}")" -- "${@}")
         readarray -t PARSED_ARGS < <(getopt -q "${GETOPT[@]}")
         eval set -- "${PARSED_ARGS[@]}"
 
         # shellcheck disable=SC2001
+
+        _noprefix="$(sed "s|^-*||g" <<< "${1}")"
         while true; do
             case "${1}" in
                 -c | --clean        ) sync_options+=(clean)        ;; # 未実装
@@ -1041,12 +1049,12 @@ case "${operation}" in
             esac
 
             [[ "${1}" = "--" ]] && shift 1 && break
-            if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
-            #add_args pacman "${1}" "${2}"
+            if array_includes OPTS "${_noprefix}:" true || array_includes OPTL "${_noprefix}:"; then
+                add_args pacman "${1}" "${2}"
                 shift 2
                 continue
             fi
-            #add_args pacman "${1}"
+            add_args pacman "${1}"
             shift 1
         done
         ;;
@@ -1057,7 +1065,6 @@ case "${operation}" in
 esac
 
 # Parse common options
-# shellcheck disable=SC2001
 if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${operation}" = "sync" ]]; then
     eval set -- "${RAW_ARGS[@]}"
     COMMON_OPTS+=("b:" "r:" "v")
@@ -1092,20 +1099,17 @@ if [[ "${operation}" = "query" ]] || [[ "${operation}" = "remove" ]] || [[ "${op
             --verbose ) common_options+=("$(sed "s|^--||g" <<< "${2}" ))") ;;
         esac
 
-        { array_includes COMMON_OPTS "${1//\-/}:" || array_includes COMMON_OPTL "${1//\-/}:"; } && add_args pacman_common "${1}" "${2}"
-        { array_includes COMMON_OPTS "${1//\-/}"  || array_includes COMMON_OPTL "${1//\-/}" ; } && add_args pacman_common "${1}"
+        _noprefix="$(sed "s|^-*||g" <<< "${1}")"
+        { array_includes COMMON_OPTS "${_noprefix}:" || array_includes COMMON_OPTL "${_noprefix}:"; } && add_args pacman_common "${1}" "${2}"
+        { array_includes COMMON_OPTS "${_noprefix}"  || array_includes COMMON_OPTL "${_noprefix}" ; } && add_args pacman_common "${1}"
 
         [[ "${1}" = "--" ]] && shift 1 && break
-        if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
-            array_includes pacman_args "${1}" || add_args pacman "${1}" "${2}"
+        if array_includes OPTS "${_noprefix}:" true || array_includes OPTL "${_noprefix}:"; then
             shift 2
             continue
         fi
-        array_includes pacman_args "${1}" || add_args pacman "${1}"
         shift 1
     done
-
-    unset COMMON_OPTS COMMON_OPTL
 fi
 
 # Parse wfa options
@@ -1153,15 +1157,18 @@ while true; do
             exit 0
             ;;
     esac
+
+    _noprefix="$(sed "s|^-*||g" <<< "${1}")"
     [[ "${1}" = "--" ]] && shift 1 && break
-    if array_includes OPTS "${1//\-/}:" true || array_includes OPTL "${1//\-/}:"; then
-        #add_args pacman "${1}" "${2}"
+    if array_includes OPTS "${_noprefix}:" true || array_includes OPTL "${_noprefix}:"; then
         shift 2
         continue
     fi
-    #add_args pacman "${1}"
     shift 1
 done
+
+#msg_debug "Pacman args: ${pacman_args[*]}\nOperation args: $(eval "printf '%s\\\n' \"\${${operation}_options}\"")"
+msg_debug "Pacman args: %s\nOperation args: %s" "${pacman_args[*]}" "$(eval "printf '%s ' \"\${${operation}_options[*]}\"")"
 
 specified_packages=("${@}")
 unset OPTS OPTL
