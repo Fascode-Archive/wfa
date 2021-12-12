@@ -877,7 +877,7 @@ operation_sync(){
         for _package in "${specified_packages[@]}"; do
             search_aur_package "${_package}"
         done
-        [[ "${force_aur}" = false ]] && { "${pacman_command}" "${pacman_args[@]}" "${specified_packages[@]}" || true; }
+        [[ "${force_aur}" = false ]] && { "${pacman_command}" -S "${pacman_args[@]}" "${specified_packages[@]}" || true; }
         return 0
     else
         if (( $(get_options sysupgrade) != 0 )); then
